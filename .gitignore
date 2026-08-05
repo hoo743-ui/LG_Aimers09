@@ -11,9 +11,14 @@ output/
 submit.zip
 *.npy
 
-# 실행 로그
+# 실행 로그 — 결론과 수치는 전부 README 4장에 옮겨 적는다
 *_log.txt
 sweep_log.txt
+sweep_shift_log_round1.txt
+feat_round2.txt
+resid_v2.txt
+rb_*.txt
+tmfeat*.txt
 
 # 파이썬
 __pycache__/
@@ -22,3 +27,4 @@ __pycache__/
 
 # Jupyter 임시 노트북
 Untitled*.ipynb
+final_log2.txt

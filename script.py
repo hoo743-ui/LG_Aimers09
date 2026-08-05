@@ -7,6 +7,12 @@ import pandas as pd
 ID_COL = "row_id"
 TARGET_COL = "control_success"
 
+# 이 스크립트는 각 행을 독립적으로 예측한다. 평가셋의 다른 행에서 얻은 통계
+# (평균, 빈도, 분포, rolling, target encoding)를 만들지 않는다 —
+# data_description.md 5) 평가 데이터 예측 원칙이 이를 금지한다.
+# 과거 이 자리에 평가셋 전체의 prev1 평균으로 예측 중심을 옮기는 보정이 있었고,
+# 그건 "평가 데이터 전체를 보고 만든 사후 보정값"에 해당해 제거했다.
+
 
 # =======================
 # 데이터 로드 유틸
@@ -57,13 +63,18 @@ def build_features(df, bundle):
 # 예측
 # =======================
 
+
 def predict_proba(bundle, X):
     """제구 성공 확률 예측.
 
+    각 행은 자기 자신의 피처만으로 예측된다. 평가셋의 다른 행을 참조하는
+    연산은 하지 않는다.
+
     모델 파일은 두 형식을 허용한다.
       - dict  : {"models": [...], "alpha": float, "center": float}
-                여러 시드의 예측을 평균한 뒤 중심값 쪽으로 축소한다.
-                축소는 과신을 줄여 Brier 를 낮추기 위한 것이다.
+                여러 모델의 예측을 평균한 뒤 중심값 쪽으로 축소한다.
+                축소는 과신을 줄여 Brier 를 낮추기 위한 것이고, alpha 와
+                center 는 학습 시점에 정해져 모델 파일에 담긴 상수다.
       - 그 외 : 단일 estimator (베이스라인 호환)
     """
     if not isinstance(bundle, dict):
@@ -131,7 +142,8 @@ def main():
     if isinstance(model, dict):
         print(f" OK. 앙상블 {len(model['models'])}개 "
               f"alpha={model.get('alpha', 1.0):.4f} "
-              f"center={model.get('center', 0.5):.4f}")
+              f"center={model.get('center', 0.5):.4f} "
+              f"features={len(model.get('features', []))}")
     else:
         print(f" OK. n_features={getattr(model, 'n_features_in_', '?')}")
 
