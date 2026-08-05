@@ -1,0 +1,24 @@
+# 대회 데이터 (약 700MB, 재배포 불가 — 대회 사이트에서 직접 내려받을 것)
+data/
+baseline_submit.zip
+
+# 가상환경
+.venv/
+
+# 학습 산출물
+model/
+output/
+submit.zip
+*.npy
+
+# 실행 로그
+*_log.txt
+sweep_log.txt
+
+# 파이썬
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Jupyter 임시 노트북
+Untitled*.ipynb
