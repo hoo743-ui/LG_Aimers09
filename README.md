@@ -120,43 +120,60 @@ python3 -m venv .venv
 
 ## 3. 스크립트
 
+**제출 경로** — 이 셋이 실제로 제출물을 만든다.
+
 | 파일 | 역할 |
 |---|---|
-| `train_hgb.py` | HGB 학습/검증. `--save` 로 모델 저장 |
-| `diag_curve.py` | 반복 횟수별 검증 점수 곡선 → 과적합 시작 지점 탐색 |
-| `sweep.py` / `sweep2.py` | 하이퍼파라미터 조합 비교 |
-| `regime_test.py` | 학습 구간·최근성 가중 실험 |
-| `offset_test.py` | 연도별 중심 편차 안정성, 보정 이식 가능성 검증 |
-| `shift_test.py` | 평가셋 피처로 시즌 성공률을 추정해 중심을 옮기는 국면 보정 검증 |
-| `sweep_shift.py` | 하이퍼파라미터·피처 구성 재탐색 (4-7) |
-| `resid_test.py` | 행 단위 기준선 위의 잔차 학습 — 합법적 국면 대응 시도 (4-8) |
-| `trackman_map.py` | Trackman 연결 실현 가능성 조사 (요일 규약, 투구수 지문) |
-| `trackman_link.py` | train ↔ trackman 경기 매칭 → `pitcher_id_map.csv` (4-9) |
-| `trackman_feat.py` | Trackman 물리 프로필 피처의 이득 측정 (4-9) |
-| `feat_test.py` | 피처 제거 실험 |
-| `ens_test.py` | 시드 앙상블 vs 다양성 앙상블 비교 |
-| `final_train.py` | 최종 학습 (앙상블) → `model/rf.pkl` 저장 |
+| `final_train.py` | 최종 학습 → `model/rf.pkl` 저장 |
 | `script.py` | **제출용 추론 스크립트.** 평가 서버가 이걸 실행한다 |
 | `make_submit.py` | `submit.zip` 생성 + 구조 검증 |
-| `explore_link.py` | Trackman ID 연결 가능성 확인 (결론: 불가) |
 
-실행 예:
+**실험 도구** — 재사용할 수 있는 것들.
+
+| 파일 | 역할 |
+|---|---|
+| `train_hgb.py` | HGB 학습/검증 |
+| `diag_curve.py` | 반복 횟수별 검증 점수 곡선 → 과적합 시작 지점 탐색 |
+| `sweep_shift.py` | 하이퍼파라미터·피처 구성 비교 (4-7). 곡선 채점 + 피처 모드 조합 |
+| `trackman_link.py` | train ↔ trackman 경기 매칭 → `pitcher_id_map.csv` (4-9) |
+| `trackman_feat.py` | Trackman 프로필 피처의 이득 측정 (4-9). **다음 작업의 출발점** |
+| `regime_test.py` | 학습 구간·최근성 가중 실험 (4-4 ①) |
+| `offset_test.py` | 연도별 중심 편차 안정성 (4-4 ②) |
+| `feat_test.py` | 피처 제거 실험 (4-4 ④) |
+| `ens_test.py` | 시드 앙상블 vs 다양성 앙상블 (4-5) |
+
+**산출물** — `pitcher_id_map.csv` (투수 592명 대응표, 4-9)
+
+### 제거한 스크립트
+
+결론이 README 에 다 남아 있고, 파일로 두면 오히려 해로운 것들을 지웠다.
+
+| 파일 | 이유 |
+|---|---|
+| `explore_link.py` | **결론이 틀렸다.** "Trackman 조인 불가"를 주장하는데 4-9 가 뒤집었다 |
+| `shift_test.py` | **규칙 위반 방법의 구현체.** 실행하면 제출 불가 모델이 나온다 (4-6) |
+| `resid_test.py` | 막다른 길. 수치와 실패 이유는 4-8 에 |
+| `trackman_map.py` | 일회성 실현 가능성 프로브. 결과는 4-9 에 |
+| `sweep.py` / `sweep2.py` | `sweep_shift.py` 로 대체. 잎 탐색 결과는 4-1 에 |
+
+> 아래 4장에서 이 파일들의 이름이 나오는 건 **측정 출처를 밝히기 위한 것**이다.
+> 파일은 없지만 수치는 전부 본문에 옮겨져 있다.
+
+**현재 확정 설정으로 제출물 만들기** (5장 참고):
 
 ```powershell
-.\.venv\Scripts\python.exe train_hgb.py --lr 0.02 --leaves 10 --min-leaf 1000
-.\.venv\Scripts\python.exe final_train.py --seeds 5 --save
-.\.venv\Scripts\python.exe make_submit.py
+.\.venv\Scripts\python.exe final_train.py --leaves 10 --min-leaf 1000 `
+    --n-iter 1100 --keep-ids --seeds 5 --save
+.\.venv\Scripts\python.exe script.py        # 로컬 동작 확인
+.\.venv\Scripts\python.exe make_submit.py   # submit.zip
 ```
 
-`final_train.py --spec` 은 `ens_test.py` 의 조합을 그대로 재현한다. 이름은
-`SHAPES` 표(L7/L10/L15/L20/L31)를 쓰고, `L10x3` 처럼 개수를 붙이면 그 모양을
-시드만 바꿔 그만큼 쌓는다. 주지 않으면 예전처럼 `--leaves` + `--seeds` 로
-한 모양짜리 시드 앙상블이 된다.
+그다음 6-2 의 제출 전 점검 목록 4단계를 반드시 돌릴 것. 1·2회차 실패가 각각
+그 목록의 첫 항목과 마지막 항목이었다.
 
-```powershell
-.\.venv\Scripts\python.exe final_train.py --spec "L7,L10,L15,L20,L31" --save
-.\.venv\Scripts\python.exe final_train.py --spec "L10x3,L7,L15,L20,L31" --save
-```
+`--spec` 으로 잎 개수가 다른 모델을 섞을 수도 있다(`"L7,L10,L15"`, `"L10x3,L31"`).
+다만 **다양성 앙상블은 권하지 않는다** — 예측을 중심 쪽으로 오므려 이득이
+중심 보정과 겹친다 (4-5). 지금 확정 설정은 시드 앙상블이다.
 
 ---
 

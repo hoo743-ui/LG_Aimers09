@@ -61,7 +61,9 @@ def load_trackman(seasons):
     df = df[df["season"].isin(seasons)].copy()
     d = pd.to_datetime(df["game_date"], format="mixed")
     df["game_month"] = d.dt.month
-    df["game_dayofweek"] = d.dt.dayofweek        # 월=0 (trackman_map.py 에서 확인)
+    # 월=0 규약. 두 규약으로 월·요일별 경기 수를 대조해 확정했다 — 월=0 은
+    # 차이 합계가 550(= 전체 경기 수 차이 538)이고 월=1 은 1178 이었다.
+    df["game_dayofweek"] = d.dt.dayofweek
     df = df.sort_values(["trackman_game_id", "pitch_no"], kind="stable")
     df["unit"] = list(zip(df["trackman_game_id"], df["pitcher_team"]))
     return df
