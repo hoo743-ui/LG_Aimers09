@@ -68,6 +68,105 @@ SHAPES = {
     "L31": (31,  200,  530),
 }
 
+# ---- 상황 조건부 Trackman 피처 (4-9) ----
+# 메인 데이터의 구종 피처는 투수별 전체 평균 하나뿐이다. trackman 에는 볼카운트와
+# 타자 좌우가 있어 "이 투수가 0-2 에서 변화구를 얼마나 던지는가"를 만들 수 있고,
+# 그 값은 행마다 달라지므로 pitcher_id 와 중복되지 않는다.
+TM_PATH = f"{DATA_DIR}/trackman_history.csv"
+ID_MAP_PATH = "pitcher_id_map.csv"
+MIN_CONF = 0.9
+MIN_COUNT_CELL = 30
+MIN_HAND_CELL = 50
+HAND = {2: "Right", 1: "Left"}      # 비율 대조로 확정 (투수 74:26)
+KINDS = ["breaking", "fastball", "offspeed"]
+COUNT_FEATS = [f"tmc_{k}_dev" for k in KINDS] + ["tmc_speed_dev", "tmc_n"]
+HAND_FEATS = [f"tmh_{k}_dev" for k in KINDS] + ["tmh_speed_dev", "tmh_n"]
+COUNT_KEY = ["pitcher_id", "balls_before", "strikes_before"]
+HAND_KEY = ["pitcher_id", "batter_hand"]
+
+
+def _summarize(df, keys, prefix, min_cell):
+    g = df.groupby(keys)
+    out = pd.DataFrame({f"{prefix}_n": g.size()})
+    for k in KINDS:
+        out[f"{prefix}_{k}"] = g["is_" + k].mean()
+    out[f"{prefix}_speed"] = g["rel_speed"].mean()
+    return out[out[f"{prefix}_n"] >= min_cell]
+
+
+def _deviate(tab, base, prefix, feats):
+    """조건부 값에서 그 투수의 전체 값을 뺀다.
+
+    전체 값은 이미 `asof_pitcher_*_rate` 로 모델에 있으므로, 편차가 곧 순수한
+    증분 정보다. 트리는 A-B 를 축 수직 분할로만 근사하니 직접 줘야 한다 (4-5).
+    """
+    tab = tab.join(base, on="pitcher_id")
+    for k in KINDS:
+        tab[f"{prefix}_{k}_dev"] = tab[f"{prefix}_{k}"] - tab[f"tmp_{k}"]
+    tab[f"{prefix}_speed_dev"] = tab[f"{prefix}_speed"] - tab["tmp_speed"]
+    return tab[feats]
+
+
+def load_trackman():
+    id_map = pd.read_csv(ID_MAP_PATH)
+    id_map = id_map[id_map["conf"] >= MIN_CONF]
+    tm = pd.read_csv(TM_PATH, encoding="utf-8-sig",
+                     usecols=["season", "pitcher_trackman_id", "pitch_type_group",
+                              "balls_before", "strikes_before", "batter_hand",
+                              "rel_speed"])
+    tm["pitcher_id"] = tm["pitcher_trackman_id"].map(
+        id_map.set_index("pitcher_trackman_id")["pitcher_id"])
+    tm = tm.dropna(subset=["pitcher_id"])
+    tm["pitcher_id"] = tm["pitcher_id"].astype(np.int64)
+    for k in KINDS:
+        tm["is_" + k] = (tm["pitch_type_group"] == k).astype(float)
+    return tm
+
+
+def ctx_tables(tm, upto):
+    """upto 미만 시즌의 trackman 으로 (카운트표, 좌우표) 를 만든다."""
+    past = tm[tm["season"] < upto]
+    if not len(past):
+        return None, None
+    base = _summarize(past, ["pitcher_id"], "tmp", 0)
+    cnt = _deviate(_summarize(past, COUNT_KEY, "tmc", MIN_COUNT_CELL),
+                   base, "tmc", COUNT_FEATS)
+    hnd = _deviate(_summarize(past, HAND_KEY, "tmh", MIN_HAND_CELL),
+                   base, "tmh", HAND_FEATS)
+    return cnt, hnd
+
+
+def attach_ctx_train(train, tm):
+    """학습 프레임에 시점 규칙을 지켜 상황 피처를 붙인다.
+
+    season S 의 행에는 S 미만 시즌의 trackman 만 쓴다. 평가(2025)도 2019~2024
+    전량을 쓰므로 학습과 추론의 피처 의미가 일치한다.
+    """
+    cparts, hparts = [], []
+    for S in sorted(train["season"].unique()):
+        cnt, hnd = ctx_tables(tm, S)
+        if cnt is None:
+            continue
+        cnt = cnt.reset_index(); cnt["season"] = S; cparts.append(cnt)
+        hnd = hnd.reset_index(); hnd["season"] = S; hparts.append(hnd)
+    cnt = pd.concat(cparts).set_index(COUNT_KEY[:1] + ["season"] + COUNT_KEY[1:])
+    hnd = pd.concat(hparts).set_index(HAND_KEY[:1] + ["season"] + HAND_KEY[1:])
+    out = train.copy()
+    out["_hand"] = out["batter_hand"].map(HAND)
+    out = out.join(cnt, on=["pitcher_id", "season", "balls_before",
+                            "strikes_before"])
+    out = out.join(hnd, on=["pitcher_id", "season", "_hand"])
+    return out.drop(columns=["_hand"])
+
+
+def pack_table(tab, keys):
+    """pkl 에 담을 순수 형태로 바꾼다. 커스텀 클래스를 만들지 않는다 (6-3)."""
+    t = tab.reset_index()
+    return {"keys": [list(map(str, k)) for k in t[keys].to_numpy()],
+            "cols": [c for c in t.columns if c not in keys],
+            "vals": t[[c for c in t.columns if c not in keys]]
+                    .to_numpy(dtype=float).tolist()}
+
 
 def parse_args():
     p = argparse.ArgumentParser()
@@ -100,6 +199,9 @@ def parse_args():
                         "예측 중심을 옮기는데, data_description.md 5) 가 "
                         "'평가 데이터 전체를 보고 만든 사후 보정값'을 금지한다. "
                         "제출 불가이며 실험 재현용으로만 남겨둔다 (README 4-6).")
+    p.add_argument("--no-ctx", action="store_true",
+                   help="상황 조건부 Trackman 피처를 끈다. 기본은 켬 — 2폴드 "
+                        "x 6시드에서 +29.31 (표준오차 4.08) 로 채택됐다 (4-9).")
     p.add_argument("--save", action="store_true")
     return p.parse_args()
 
@@ -194,6 +296,23 @@ def main():
                         encoding="utf-8-sig", usecols=all_features + [TARGET])
     if drop:
         print(f"제거 컬럼: {drop}")
+
+    ctx_pack = None
+    if not args.no_ctx:
+        tm = load_trackman()
+        train = attach_ctx_train(train, tm)
+        features = features + COUNT_FEATS + HAND_FEATS
+        cov = train["tmc_n"].notna().mean(), train["tmh_n"].notna().mean()
+        print(f"상황 피처 {len(COUNT_FEATS) + len(HAND_FEATS)}개 추가 "
+              f"| 학습 커버리지 카운트 {cov[0]:.1%} 좌우 {cov[1]:.1%}")
+        # 추론용 표는 **전 기간** trackman 으로 만든다. 평가는 2025 이고
+        # trackman 은 2024 까지이므로 전량이 과거다.
+        c_all, h_all = ctx_tables(tm, 9999)
+        ctx_pack = {"count": pack_table(c_all, COUNT_KEY),
+                    "hand": pack_table(h_all, HAND_KEY),
+                    "hand_map": {str(k): v for k, v in HAND.items()},
+                    "count_key": COUNT_KEY, "hand_key": HAND_KEY}
+        print(f"추론용 표: 카운트 {len(c_all):,}셀, 좌우 {len(h_all):,}셀")
 
     if args.detrend:
         # 시즌별 리그 평균 차감. 평가셋은 한 시즌이므로 추론에서 평가셋 전체
@@ -310,6 +429,10 @@ def main():
         "shift": {"feature": PREV1, "bias": 0.0} if args.shift else None,
         # 피처 정의의 일부다. 학습에서 뺐으면 추론에서도 반드시 뺀다.
         "detrend": {"columns": list(CUMUL)} if args.detrend else None,
+        # 상황 조건부 Trackman 조회표 (4-9). 평가 서버에 trackman 파일이
+        # 있다는 보장이 없어 표를 통째로 담는다. 각 행은 자기 (투수, 카운트) /
+        # (투수, 타자좌우) 만 조회하므로 행 독립이다.
+        "ctx": ctx_pack,
         "note":"predict: mean(predict_proba[:,1]) -> center + alpha*(p-center) -> clip(0,1)",
     }
     os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)

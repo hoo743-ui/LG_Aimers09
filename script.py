@@ -40,6 +40,46 @@ def load_sample_submission(path):
 # 학습 때 사용한 전처리 (그대로)
 # =======================
 
+def attach_ctx(df, bundle):
+    """상황 조건부 Trackman 피처를 붙인다.
+
+    모델 파일에 담긴 조회표를 (pitcher_id, 볼카운트) 와 (pitcher_id, 타자좌우)
+    로 붙인다. 표는 학습 시점에 2019~2024 trackman 으로 만들어 pkl 에 들어
+    있으므로, 평가 서버에 trackman 파일이 없어도 동작한다.
+
+    **행 독립이다.** 각 행은 자기 자신의 투수/카운트/타자좌우로만 조회하며
+    평가셋의 다른 행을 일절 참조하지 않는다. 표의 값도 평가 데이터가 아니라
+    2019~2024 과거 로그에서 나왔다.
+
+    표에 없는 조합(표본 부족, 미지 투수)은 결측으로 둔다 — HGB 는 결측을 분기
+    조건으로 직접 학습하므로 채워 넣는 것보다 낫다.
+    """
+    ctx = bundle.get("ctx") if isinstance(bundle, dict) else None
+    if not ctx:
+        return df
+
+    out = df
+    for part, keycols in (("count", ctx["count_key"]), ("hand", ctx["hand_key"])):
+        tab = ctx[part]
+        frame = pd.DataFrame(tab["vals"], columns=tab["cols"])
+        keys = pd.DataFrame(tab["keys"], columns=keycols).astype(str)
+        frame = pd.concat([keys, frame], axis=1).set_index(keycols)
+
+        # 조인 키를 문자열로 맞춘다. 표는 학습 때 문자열로 굳혀 담았고,
+        # test 쪽 정수/실수 표기가 환경에 따라 달라질 수 있어서다.
+        left = pd.DataFrame(index=out.index)
+        for c in keycols:
+            if c == "batter_hand":
+                hand_map = {int(k): v for k, v in ctx["hand_map"].items()}
+                left[c] = out[c].map(hand_map).astype(str)
+            else:
+                left[c] = out[c].astype("int64").astype(str)
+
+        vals = left.join(frame, on=keycols)[tab["cols"]]
+        out = pd.concat([out, vals], axis=1)
+    return out
+
+
 def build_features(df, bundle):
     """모델 입력 추출.
 
@@ -156,6 +196,7 @@ def main():
     # ---- 전처리 (학습과 동일) ----
     print("Build features...")
     ids = test[ID_COL].tolist()
+    test = attach_ctx(test, model)
     X = build_features(test, model)
     print(f" features={X.shape[1]}")
 
