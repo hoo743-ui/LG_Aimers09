@@ -199,6 +199,11 @@ def parse_args():
                         "예측 중심을 옮기는데, data_description.md 5) 가 "
                         "'평가 데이터 전체를 보고 만든 사후 보정값'을 금지한다. "
                         "제출 불가이며 실험 재현용으로만 남겨둔다 (README 4-6).")
+    p.add_argument("--ctx-keep-n", action="store_true",
+                   help="🚫 권하지 않음. 표본 수 컬럼(tmc_n/tmh_n)을 피처로 "
+                        "남긴다. 이 값은 시즌에 따라 단조 증가하는 **시계**라 "
+                        "학습 기간 안에서만 유용하고 2025 에서는 포화된다. "
+                        "6회차 제출이 이걸 달고 나가 LB 가 떨어졌다 (4-9).")
     p.add_argument("--no-ctx", action="store_true",
                    help="상황 조건부 Trackman 피처를 끈다. 기본은 켬 — 2폴드 "
                         "x 6시드에서 +29.31 (표준오차 4.08) 로 채택됐다 (4-9).")
@@ -301,10 +306,14 @@ def main():
     if not args.no_ctx:
         tm = load_trackman()
         train = attach_ctx_train(train, tm)
-        features = features + COUNT_FEATS + HAND_FEATS
+        # 기본은 표본 수 컬럼 제외. 시계라서 시즌 경계를 못 넘는다 (4-9).
+        ctx_feats = [c for c in COUNT_FEATS + HAND_FEATS
+                     if args.ctx_keep_n or c not in ("tmc_n", "tmh_n")]
+        features = features + ctx_feats
+        print(f"상황 피처 {len(ctx_feats)}개 "
+              f"{'(시계 포함 — 권장하지 않음)' if args.ctx_keep_n else '(시계 제외)'}")
         cov = train["tmc_n"].notna().mean(), train["tmh_n"].notna().mean()
-        print(f"상황 피처 {len(COUNT_FEATS) + len(HAND_FEATS)}개 추가 "
-              f"| 학습 커버리지 카운트 {cov[0]:.1%} 좌우 {cov[1]:.1%}")
+        print(f"학습 커버리지 카운트 {cov[0]:.1%} 좌우 {cov[1]:.1%}")
         # 추론용 표는 **전 기간** trackman 으로 만든다. 평가는 2025 이고
         # trackman 은 2024 까지이므로 전량이 과거다.
         c_all, h_all = ctx_tables(tm, 9999)

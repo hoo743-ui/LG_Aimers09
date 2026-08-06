@@ -184,9 +184,16 @@ def main():
         print(f"  {S}  {df.loc[m,'tmc_n'].notna().mean():6.1%} / "
               f"{df.loc[m,'tmh_n'].notna().mean():6.1%}")
 
+    # 표본 수 컬럼은 시즌에 따라 단조 증가한다 — 즉 **시계**다. 학습 기간
+    # 안에서는 성공률 하락 추세를 읽어 점수를 올려주지만, 2025 에서는 학습
+    # 범위를 벗어나 포화된다. 이득이 신호에서 왔는지 시계에서 왔는지 가른다.
+    N_FEATS = ["tmc_n", "tmh_n"]
+    DEV_FEATS = [c for c in COUNT_FEATS + HAND_FEATS if c not in N_FEATS]
     sets = {"base": cols, "hand": cols + HAND_FEATS,
             "count": cols + COUNT_FEATS,
-            "both": cols + COUNT_FEATS + HAND_FEATS}
+            "both": cols + COUNT_FEATS + HAND_FEATS,
+            "dev": cols + DEV_FEATS,      # 비율/편차만 — 척도가 시즌과 무관
+            "n": cols + N_FEATS}          # 시계만
     res = {}
     for Y in folds:
         tr, va = df[df["season"] < Y], df[df["season"] == Y]
