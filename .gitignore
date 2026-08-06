@@ -2,8 +2,14 @@
 data/
 baseline_submit.zip
 
-# 가상환경
+# 가상환경 — .venv 는 실험용, venv_submit 은 핀과 일치하는 제출용,
+# oldnp 는 낮은 numpy 로드 검사용 (2-2, 6-4)
 .venv/
+venv_submit/
+oldnp/
+
+# pkl 백업 — model/ 밖에 두어야 제출물에 안 딸려 간다 (6-4)
+rf_*_backup_*.pkl
 
 # 학습 산출물
 model/
@@ -15,6 +21,7 @@ submit.zip
 # 루트의 .txt 는 전부 무시하고 requirements.txt 만 예외로 둔다.
 /*.txt
 !/requirements.txt
+*.log
 
 # 파이썬
 __pycache__/

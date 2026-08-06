@@ -168,7 +168,9 @@ def main():
     print("Build submission...")
     sub = merge_predictions(sub, ids, preds)
     save_submission(OUT_PATH, sub)
-    print(f"✅ Saved: {OUT_PATH} (rows={len(sub)})")
+    # 순수 ASCII 로 찍는다. 평가 컨테이너에 LANG 이 없으면 파이썬이 stdout 을
+    # ASCII 로 잡아서, 비ASCII 문자 하나 때문에 CSV 를 다 쓰고도 예외로 끝난다.
+    print(f"[OK] Saved: {OUT_PATH} (rows={len(sub)})")
 
 
 if __name__ == "__main__":

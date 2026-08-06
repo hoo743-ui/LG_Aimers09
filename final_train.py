@@ -262,7 +262,7 @@ def main():
     print(f"  앙상블 원본     {s_raw:8.2f}   범위 {p_ens.min():.4f}~{p_ens.max():.4f}")
     print(f"  중심 편차      {p_ens.mean() - r:+8.4f}   (예측 {p_ens.mean():.4f} vs 실제 {r:.4f})")
     print(f"  국면 보정 후    {s_shift:8.2f}   ({s_shift - s_raw:+.2f}) "
-          f"추정 {r_hat:.4f} {'[적용]' if args.shift else '[미적용 — --no-shift]'}")
+          f"추정 {r_hat:.4f} {'[적용]' if args.shift else '[미적용]'}")
     if a < 0.97:
         verdict = "(과신 → 예측을 좁혀야 이득)"
     elif a > 1.03:
