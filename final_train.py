@@ -31,7 +31,7 @@ import joblib
 import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
-from sklearn.ensemble import HistGradientBoostingClassifier
+from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
@@ -103,8 +103,27 @@ DERIVED = ["same_hand"]
 # 계열 혼합 (4-8) 과 중심 보정 (4-9) 의 기본값. 둘 다 3폴드에서 부호가 일치하고
 # 서로 거의 독립이다 (겹침 -0.1 ~ -3.4). 2024 폴드 기준 각각 +9.34 / +7.81,
 # 합쳐서 +16.03.
-BLEND_LR_W = 0.10
+BLEND_LR_W = 0.05
+BLEND_RF_W = 0.20
 CENTER_LAM = 0.03
+
+
+def make_forest(features, seed=42):
+    """혼합용 RandomForest (4-8).
+
+    규제를 세게 걸면 튜닝된 HGB 와 대등하다. 1회차 베이스라인이 415.57 이었던
+    것은 RF 가 나빠서가 아니라 max_depth=10 으로 규제가 없어 과신했기 때문이다.
+    폴드별 강약이 HGB 와 정반대라(2021 +128 / 2024 -92) 섞을 때 값이 있다.
+    """
+    num = [c for c in features if c not in CAT_COLS]
+    pre = ColumnTransformer([
+        ("cat", OrdinalEncoder(handle_unknown="use_encoded_value",
+                               unknown_value=-1), CAT_COLS),
+        ("num", SimpleImputer(strategy="median", add_indicator=True), num),
+    ])
+    return Pipeline([("pre", pre), ("clf", RandomForestClassifier(
+        n_estimators=200, min_samples_leaf=2000, max_features=0.4,
+        n_jobs=-1, random_state=seed))])
 
 
 def make_linear(features):
@@ -163,6 +182,8 @@ def parse_args():
                    help="파생 컬럼(same_hand)을 빼고 학습한다. 기존 결과와 대조용")
     p.add_argument("--blend-lr", type=float, default=BLEND_LR_W,
                    help="로지스틱 혼합 비중 (4-8). 0 이면 끈다")
+    p.add_argument("--blend-rf", type=float, default=BLEND_RF_W,
+                   help="RandomForest 혼합 비중 (4-8). 0 이면 끈다")
     p.add_argument("--center-lam", type=float, default=CENTER_LAM,
                    help="중심 보정 계수 (4-9). p' = p + lam*(그 행의 prev1 - c). "
                         "lam 과 c 는 학습 시점 상수이고 anchor 는 그 행 자신의 "
@@ -342,15 +363,19 @@ def main():
     # ---- 계열 혼합 (4-8) 과 중심 보정 (4-9) ----
     # 저장 경로와 **같은 순서**로 적용해 홀드아웃 수치를 낸다. 여기서 재지 않으면
     # 실제 추론이 무엇을 내는지 모른 채 제출하게 된다.
-    p_mix = p_ens
-    if args.blend_lr > 0:
+    w_h = 1.0 - args.blend_lr - args.blend_rf
+    p_mix = w_h * p_ens
+    for label, w, maker in (("로지스틱", args.blend_lr, make_linear),
+                            ("RF", args.blend_rf, make_forest)):
+        if w <= 0:
+            continue
         t = time.time()
-        lr_val = make_linear(features)
-        lr_val.fit(X_tr, y_tr)
-        p_lr = lr_val.predict_proba(X_va)[:, 1]
-        p_mix = (1 - args.blend_lr) * p_mix + args.blend_lr * p_lr
-        print(f"\n  혼합용 로지스틱 단독 {score_of(y_va, p_lr, base):8.2f} "
-              f"[{time.time()-t:.0f}s]")
+        mdl = maker(features)
+        mdl.fit(X_tr, y_tr)
+        p_o = mdl.predict_proba(X_va)[:, 1]
+        p_mix = p_mix + w * p_o
+        print(f"\n  혼합용 {label} 단독 {score_of(y_va, p_o, base):8.2f} "
+              f"(비중 {w}) [{time.time()-t:.0f}s]")
     s_mix = score_of(y_va, p_mix, base)
 
     p_fin = p_mix
@@ -374,9 +399,9 @@ def main():
     print("\n=== 결과 ===")
     print(f"  앙상블 원본     {s_raw:8.2f}   범위 {p_ens.min():.4f}~{p_ens.max():.4f}")
     print(f"  중심 편차      {p_ens.mean() - r:+8.4f}   (예측 {p_ens.mean():.4f} vs 실제 {r:.4f})")
-    if args.blend_lr > 0:
+    if args.blend_lr > 0 or args.blend_rf > 0:
         print(f"  + 계열 혼합    {s_mix:8.2f}   ({s_mix - s_raw:+.2f}) "
-              f"lr 비중 {args.blend_lr}")
+              f"hgb {w_h:.2f} / rf {args.blend_rf} / lr {args.blend_lr}")
     if args.center_lam > 0:
         print(f"  + 중심 보정    {s_fin:8.2f}   ({s_fin - s_mix:+.2f}) "
               f"lam={args.center_lam}  편차 {p_fin.mean() - r:+.4f}")
@@ -424,14 +449,19 @@ def save_bundle(args, members, train, features, alpha_out):
         models.append(strip_rng(m))
         print(f"  {label} (n_iter={n_iter_full}) 완료 [{time.time()-t:.0f}s]")
 
-    # ---- 혼합용 로지스틱 ----
-    blend = None
-    if args.blend_lr > 0:
+    # ---- 혼합용 모델들 ----
+    # script.py 는 dict 하나(구형)와 리스트(신형)를 모두 읽는다.
+    blend = []
+    for label, w, maker in (("로지스틱", args.blend_lr, make_linear),
+                            ("RF", args.blend_rf, make_forest)):
+        if w <= 0:
+            continue
         t = time.time()
-        lr = make_linear(features)
-        lr.fit(train[features], train[TARGET])
-        blend = {"model": lr, "weight": float(args.blend_lr)}
-        print(f"  혼합 로지스틱 (비중 {args.blend_lr}) 완료 [{time.time()-t:.0f}s]")
+        mdl = maker(features)
+        mdl.fit(train[features], train[TARGET])
+        blend.append({"model": mdl, "weight": float(w), "kind": label})
+        print(f"  혼합 {label} (비중 {w}) 완료 [{time.time()-t:.0f}s]")
+    blend = blend or None
 
     center_val = float(train[TARGET].mean())
     shift_cfg = None

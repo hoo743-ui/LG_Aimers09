@@ -121,10 +121,17 @@ def predict_proba(bundle, X):
         acc = p if acc is None else acc + p
     preds = acc / len(models)
 
+    # 혼합 — dict 하나(구형) 또는 리스트(신형). 주력 비중은 1 - 나머지 합이다.
     blend = bundle.get("blend")
     if blend:
-        w = float(blend["weight"])
-        preds = (1.0 - w) * preds + w * blend["model"].predict_proba(X)[:, 1]
+        parts = [blend] if isinstance(blend, dict) else list(blend)
+        w_rest = sum(float(b["weight"]) for b in parts)
+        if not 0.0 <= w_rest < 1.0:
+            raise ValueError(f"혼합 비중 합이 범위를 벗어남: {w_rest}")
+        acc2 = (1.0 - w_rest) * preds
+        for b in parts:
+            acc2 = acc2 + float(b["weight"]) * b["model"].predict_proba(X)[:, 1]
+        preds = acc2
 
     alpha = float(bundle.get("alpha", 1.0))
     center = float(bundle.get("center", 0.5))
@@ -194,7 +201,9 @@ def main():
               f"alpha={model.get('alpha', 1.0):.4f} "
               f"center={model.get('center', 0.5):.4f} "
               f"features={len(model.get('features', []))}")
-        blend_txt = "없음" if not b else "lr w=%.2f" % b["weight"]
+        parts = [] if not b else ([b] if isinstance(b, dict) else list(b))
+        blend_txt = "없음" if not parts else ", ".join(
+            "%s w=%.2f" % (x.get("kind", "?"), x["weight"]) for x in parts)
         shift_txt = "없음" if not s else "%s lam=%.3f" % (s["feature"], s["lam"])
         print(f"     혼합={blend_txt} | 중심보정={shift_txt}")
     else:

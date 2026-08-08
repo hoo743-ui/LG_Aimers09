@@ -63,6 +63,20 @@ def parse_args():
     return p.parse_args()
 
 
+def centered(A, d):
+    """anchor 를 학습 시점 상수로 중심화한다.
+
+    중심은 **그 폴드의 학습 시즌(< Y) 평균**이다. 타깃 평균(c)을 쓰면 차분
+    anchor(prev5 - cumul, 중심이 0 근처)에서 엉뚱한 값이 된다. 결측도 같은
+    상수로 메워 그 행에서는 보정이 0 이 되게 한다.
+
+    학습 데이터에서 계산한 상수이므로 평가셋을 보지 않는다.
+    """
+    mu = float(np.nanmean(A[d["train_mask"]]))
+    a = A[d["mask"]]
+    return np.where(np.isnan(a), mu, a) - mu
+
+
 def load_preds(Y, model, seeds):
     acc, n = None, 0
     for s in range(42, 42 + seeds):
@@ -89,15 +103,23 @@ def main():
     def col(c):
         return df[c].to_numpy(dtype=np.float64)
 
-    p1, p3, p5 = col(PREV1), col(PREV3), col(PREV5)
+    p1, p3, p5, cu = col(PREV1), col(PREV3), col(PREV5), col(CUM)
+    # 차분 anchor — 수준이 아니라 **표류**를 잰다. 수준(prev1)은 해마다 기준이
+    # 달라 계수가 흔들리지만, "최근이 통산보다 얼마나 낮은가"는 하락 국면에서
+    # 일관되게 음수라 계수가 더 안정적일 수 있다. 4-2 가 기록한 것처럼 누적형은
+    # 국면을 늦게 따라가므로 그 격차가 곧 표류의 크기다.
     anchors = {
         "prev1": p1,
         "prev3": p3,
         "prev5": p5,
         "prev135": np.nanmean(np.vstack([p1, p3, p5]), axis=0),
         "prev35": np.nanmean(np.vstack([p3, p5]), axis=0),
-        "cumul": col(CUM),
+        "cumul": cu,
         "batter_cumul": col(BCUM),
+        "d5_cumul": p5 - cu,
+        "d3_cumul": p3 - cu,
+        "d1_cumul": p1 - cu,
+        "d135_cumul": np.nanmean(np.vstack([p1, p3, p5]), axis=0) - cu,
     }
 
     print(f"모델 {args.model} | 폴드 {FOLDS}\n")
@@ -117,7 +139,8 @@ def main():
         base = max(0.0, 100000 * (1 - (resid ** 2).mean() / denom))
         print(f"fold {Y} (시드 {nseed})  기준 {base:8.2f}  "
               f"중심편차 {resid.mean():+.5f}  c={c:.4f}  실제={r:.4f}")
-        per_fold[Y] = dict(p=p, y=yy, c=c, denom=denom, base=base, mask=m)
+        per_fold[Y] = dict(p=p, y=yy, c=c, denom=denom, base=base, mask=m,
+                           train_mask=season < Y)
 
     print(f"\n{'anchor':>14}{'폴드':>7}{'sd(A-c)':>9}{'lambda*':>9}"
           f"{'상한':>9}{'이식이득':>9}{'이식후편차':>11}")
@@ -130,8 +153,7 @@ def main():
         lam_by_fold = {}
         for Y in FOLDS:
             d = per_fold[Y]
-            a = A[d["mask"]]
-            a = np.where(np.isnan(a), d["c"], a) - d["c"]
+            a = centered(A, d)
             resid = d["p"] - d["y"]
             num, den = float((a * resid).mean()), float((a ** 2).mean())
             lam = 0.0 if den <= 0 else -num / den
@@ -181,8 +203,7 @@ def main():
         cells = []
         for Y in FOLDS:
             d = per_fold[Y]
-            a = A[d["mask"]]
-            a = np.where(np.isnan(a), d["c"], a) - d["c"]
+            a = centered(A, d)
             resid = d["p"] - d["y"]
             row = []
             for lam in lams:
@@ -208,6 +229,55 @@ def main():
                   f"  최악 {arr[:, best].min():+.2f}")
         else:
             print("      → 세 폴드 모두 양수인 lambda 가 없다")
+
+    # ---- 다변량 동시 적합 ----
+    # anchor 하나로는 노이즈 대비 신호가 약하다. 여러 개를 동시에 쓰면 각자의
+    # 노이즈가 부분적으로 상쇄되면서 국면 성분만 남을 수 있다. 다만 계수를
+    # 자유롭게 적합하면 폴드에 과적합되므로 **축소 배율을 곱해** 쓴다.
+    print("\n=== 다변량 동시 적합 (LOO, 축소 배율 s) ===")
+    SETS = {
+        "수준 3": ["prev1", "prev3", "prev5"],
+        "수준+누적": ["prev1", "prev5", "cumul"],
+        "차분 3": ["d1_cumul", "d3_cumul", "d5_cumul"],
+        "수준+차분": ["prev1", "d5_cumul"],
+        "전부": ["prev1", "prev3", "prev5", "cumul", "batter_cumul"],
+    }
+    ss = [0.05, 0.10, 0.20, 0.30, 0.50, 1.00]
+    for label, names in SETS.items():
+        mats, resids = {}, {}
+        for Y in FOLDS:
+            d = per_fold[Y]
+            mats[Y] = np.column_stack([centered(anchors[n], d) for n in names])
+            resids[Y] = d["p"] - d["y"]
+        rows = []
+        for Y in FOLDS:
+            # 나머지 폴드에서 계수를 적합한다 (leave-one-out)
+            G = sum(mats[Z].T @ mats[Z] / len(mats[Z]) for Z in FOLDS if Z != Y)
+            b = sum(mats[Z].T @ resids[Z] / len(mats[Z]) for Z in FOLDS if Z != Y)
+            lam = -np.linalg.solve(G + 1e-9 * np.eye(len(names)), b)
+            d = per_fold[Y]
+            row = []
+            for s in ss:
+                nr = resids[Y] + mats[Y] @ (lam * s)
+                row.append(max(0.0, 100000 * (1 - (nr ** 2).mean() / d["denom"]))
+                           - d["base"])
+            rows.append(row)
+        arr = np.array(rows)
+        print(f"\n  {label}  ({', '.join(names)})")
+        print(f"{'s':>10}" + "".join(f"{s:9.2f}" for s in ss))
+        for i, Y in enumerate(FOLDS):
+            print(f"{Y:>10}" + "".join(f"{x:+9.2f}" for x in arr[i]))
+        print(f"{'평균':>10}" + "".join(f"{arr[:, j].mean():+9.2f}"
+                                        for j in range(len(ss))))
+        print(f"{'최악':>10}" + "".join(f"{arr[:, j].min():+9.2f}"
+                                        for j in range(len(ss))))
+        okj = [j for j in range(len(ss)) if (arr[:, j] > 0).all()]
+        if okj:
+            j = max(okj, key=lambda j: arr[:, j].mean())
+            print(f"      → 세 폴드 모두 양수인 최고 s={ss[j]:.2f}  "
+                  f"평균 {arr[:, j].mean():+.2f}  최악 {arr[:, j].min():+.2f}")
+        else:
+            print("      → 세 폴드 모두 양수인 s 가 없다")
 
     # ---- 중심 보정 x 계열 혼합 — 겹치는가 ----
     # 혼합(4-8)의 이득은 오차 상쇄였고(중심 편차가 거의 안 변했다) 이쪽은 수준
