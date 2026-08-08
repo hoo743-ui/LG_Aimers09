@@ -40,6 +40,32 @@ def load_sample_submission(path):
 # 학습 때 사용한 전처리 (그대로)
 # =======================
 
+def add_derived(df):
+    """학습과 동일한 파생 컬럼. final_train.py 의 같은 이름 함수와 반드시 일치해야 한다.
+
+    same_hand — 투수와 타자의 좌우가 같은가.
+
+    동일 손 매치업은 투수에게 유리하다. 그런데 그 효과는 pitcher_hand 단독으로도
+    batter_hand 단독으로도 주변부 평균이 상쇄돼 0 이다.
+
+              좌타   우타
+        좌완    +      -
+        우완    -      +
+
+    탐욕적 부스팅은 루트에서 주변부 이득으로 분할을 고르므로 이 상호작용을
+    영원히 선택하지 않는다. 트리를 1100 그루 돌려도 못 찾는다 — 구조적
+    사각지대다. 그래서 컬럼으로 미리 만들어 준다 (3폴드 x 2시드 +24.66).
+
+    양쪽 다 int {1,2} 라 산술로 결정적이다. pd.factorize 를 쓰면 등장 순서로
+    코드가 매겨져 train 과 test 에서 값이 갈리므로 절대 쓰지 말 것.
+
+    이 파생은 그 행 자신의 두 컬럼만 본다. 평가셋의 다른 행을 참조하지 않는다.
+    """
+    df = df.copy()
+    df["same_hand"] = (df["pitcher_hand"] == df["batter_hand"]).astype(int)
+    return df
+
+
 def build_features(df, bundle):
     """모델 입력 추출.
 
@@ -156,7 +182,9 @@ def main():
     # ---- 전처리 (학습과 동일) ----
     print("Build features...")
     ids = test[ID_COL].tolist()
-    X = build_features(test, model)
+    # 파생 컬럼은 항상 만든다. 실제로 쓸지는 bundle["features"] 가 정하므로,
+    # 파생을 모르는 옛 pkl 이 와도 그냥 무시된다.
+    X = build_features(add_derived(test), model)
     print(f" features={X.shape[1]}")
 
     # ---- 예측 (제구 성공 확률) ----

@@ -69,6 +69,36 @@ SHAPES = {
 }
 
 
+def add_derived(df):
+    """파생 컬럼. script.py 의 같은 이름 함수와 **반드시 일치**해야 한다.
+
+    same_hand — 투수와 타자의 좌우가 같은가.
+
+    동일 손 매치업은 투수에게 유리한데, 그 효과는 pitcher_hand 단독으로도
+    batter_hand 단독으로도 주변부 평균이 상쇄돼 0 이다.
+
+              좌타   우타
+        좌완    +      -
+        우완    -      +
+
+    탐욕적 부스팅은 루트에서 주변부 이득으로 분할을 고르므로 이런 순수
+    상호작용을 영원히 선택하지 않는다. 두 컬럼 다 4년 내내 모델 안에 있었는데
+    트리 1100 그루가 못 찾았다 — 구조적 사각지대다 (README 4-7).
+
+    3폴드 x 2시드 +24.66. 4-5 기각 목록의 어떤 항목보다 크고, 유일한 합법
+    채택이었던 pitcher_id 복원(+8.5)의 세 배다.
+
+    양쪽 다 int {1,2} 라 산술로 결정적이다. pd.factorize 는 등장 순서로 코드를
+    매겨 train 과 test 에서 값이 갈리므로 쓰지 말 것.
+    """
+    df = df.copy()
+    df["same_hand"] = (df["pitcher_hand"] == df["batter_hand"]).astype(int)
+    return df
+
+
+DERIVED = ["same_hand"]
+
+
 def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("--lr", type=float, default=0.02)
@@ -100,6 +130,14 @@ def parse_args():
                         "예측 중심을 옮기는데, data_description.md 5) 가 "
                         "'평가 데이터 전체를 보고 만든 사후 보정값'을 금지한다. "
                         "제출 불가이며 실험 재현용으로만 남겨둔다 (README 4-6).")
+    p.add_argument("--no-derived", action="store_true",
+                   help="파생 컬럼(same_hand)을 빼고 학습한다. 기존 결과와 대조용")
+    p.add_argument("--skip-val", action="store_true",
+                   help="홀드아웃 검증을 건너뛰고 전체 재학습·저장만 한다. 같은 "
+                        "설정의 검증 점수를 이미 알고 있을 때 시간을 절반으로 "
+                        "줄인다. 저장되는 alpha/center 는 검증과 무관하게 정해지므로 "
+                        "결과물은 --skip-val 없이 돌린 것과 동일하다. "
+                        "--calibrate 와는 같이 쓸 수 없다 (a 를 잴 데가 없다)")
     p.add_argument("--save", action="store_true")
     return p.parse_args()
 
@@ -195,12 +233,31 @@ def main():
     if drop:
         print(f"제거 컬럼: {drop}")
 
+    if not args.no_derived:
+        train = add_derived(train)
+        features = features + DERIVED
+        print(f"파생 컬럼: {DERIVED}")
+
     if args.detrend:
         # 시즌별 리그 평균 차감. 평가셋은 한 시즌이므로 추론에서 평가셋 전체
         # 평균을 빼는 것과 같은 연산이다.
         for c in CUMUL:
             train[c] = train[c] - train.groupby("season")[c].transform("mean")
         print(f"상대화: 누적형 {len(CUMUL)}개에서 시즌별 리그 평균 차감")
+
+    if args.skip_val and args.calibrate:
+        raise SystemExit("--skip-val 과 --calibrate 는 같이 못 쓴다 (a 를 잴 데가 없다)")
+
+    if args.skip_val:
+        # 저장되는 alpha/center 는 검증과 무관하게 정해지므로, 검증을 건너뛰어도
+        # 결과물은 동일하다. 같은 설정의 검증 점수를 이미 아는 경우에만 쓸 것.
+        print(f"학습 {len(train)} | 검증 건너뜀 (--skip-val)")
+        print(f"설정: lr={args.lr} leaves={args.leaves} min_leaf={args.min_leaf} "
+              f"l2={args.l2} n_iter={args.n_iter} seeds={args.seeds}")
+        if not args.save:
+            raise SystemExit("--skip-val 은 --save 와 같이 써야 의미가 있다")
+        save_bundle(args, members, train, features, 1.0)
+        return
 
     is_val = train["season"] == VAL_SEASON
     X_tr, y_tr = train.loc[~is_val, features], train.loc[~is_val, TARGET]
@@ -284,7 +341,15 @@ def main():
         print("\n(저장하려면 --save)")
         return
 
-    # ---- 전체 데이터로 재학습 ----
+    save_bundle(args, members, train, features, alpha_out)
+
+
+def save_bundle(args, members, train, features, alpha_out):
+    """전체 데이터로 재학습해 pkl 로 저장한다.
+
+    --skip-val 경로와 공유한다. 저장물의 내용은 검증 여부와 무관하다 —
+    alpha 는 --calibrate 없이는 1.0 이고 center 는 전체 학습 데이터의 평균이다.
+    """
     # 학습량이 늘었으니 반복수에 10% 여유를 준다.
     print(f"\n전체 데이터 재학습 (반복수 +10%) ...")
     models = []
