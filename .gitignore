@@ -26,3 +26,5 @@ __pycache__/
 
 # Jupyter 임시 노트북
 Untitled*.ipynb
+
+.extrapcache/
