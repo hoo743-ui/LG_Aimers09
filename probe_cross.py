@@ -71,7 +71,101 @@ def parse_args():
     p.add_argument("--k", type=int, default=K)
     p.add_argument("--max-cells", type=int, default=400)
     p.add_argument("--model", default="hgb", help="캐시에서 쓸 모델 이름")
+    p.add_argument("--order", type=int, choices=[2, 3], default=2,
+                   help="3 이면 **순수 3차 상호작용**을 훑는다. 주변부 3개와 "
+                        "2차 3개를 모두 제거하고 남는 성분만 본다 — 2차가 전부 "
+                        "0 으로 보이는 자리는 탐욕적 트리가 경로 자체를 못 찾기 "
+                        "때문에, 사각지대 논리가 차수를 올리면 더 강해진다")
+    p.add_argument("--eval-fold", type=int, default=None,
+                   help="평가 폴드를 바꾼다. 이력은 그 이전 시즌 전부. 같은 "
+                        "조합이 다른 폴드에서도 올라오는지 보는 안정성 검사용 "
+                        "— 단일 폴드 추정은 이 프로젝트에서 두 번 배신했다")
+    p.add_argument("--max-card", type=int, default=13,
+                   help="3차에서 쓸 피처의 최대 수준 수. 낮출수록 셀이 커져 "
+                        "추정이 안정되지만 후보가 줄어든다")
     return p.parse_args()
+
+
+def group_mean(idx, n_cell, resid, k):
+    """셀별 잔차 평균 (표본 축소). 없는 셀은 0."""
+    cnt = np.bincount(idx, minlength=n_cell).astype(np.float64)
+    tot = np.bincount(idx, weights=resid, minlength=n_cell)
+    m = np.divide(tot, cnt, out=np.zeros(n_cell), where=cnt > 0)
+    return np.where(cnt > 0, m * (cnt / (cnt + k)), 0.0), cnt
+
+
+def scan_order3(codes, names, card, resid, hist_mask, eval_mask, denom, args):
+    """순수 3차 상호작용을 훑는다.
+
+    ANOVA 항등식으로 저차 성분을 전부 뺀다.
+
+        dev3[a,b,c] = m[a,b,c] - m[a,b] - m[a,c] - m[b,c]
+                                + m[a] + m[b] + m[c] - m[]
+
+    주변부와 2차 평균은 쌍마다 재계산하면 낭비이므로 미리 만들어 둔다 —
+    3중 조합은 수천 개인데 쌍은 수백 개뿐이다.
+    """
+    use = [n for n in names if card[n] <= args.max_card]
+    print(f"3차 대상 피처 {len(use)}개 (수준 {args.max_card} 이하) | "
+          f"조합 {len(use)*(len(use)-1)*(len(use)-2)//6:,}개", flush=True)
+
+    rh, re_ = resid[hist_mask], resid[eval_mask]
+    mu = float(rh.mean())
+
+    # 주변부
+    marg = {}
+    for n in use:
+        c = codes[n]
+        marg[n] = group_mean(c[hist_mask], card[n], rh, args.k)[0]
+
+    # 2차 — 미리 만들어 재사용
+    t = time.time()
+    pair = {}
+    for a, b in itertools.combinations(use, 2):
+        na, nb = card[a], card[b]
+        idx = codes[a][hist_mask] * nb + codes[b][hist_mask]
+        pair[(a, b)] = group_mean(idx, na * nb, rh, args.k)[0]
+    print(f"2차 사전계산 {len(pair)}쌍 [{time.time()-t:.0f}s]", flush=True)
+
+    rows = []
+    t = time.time()
+    for a, b, c in itertools.combinations(use, 3):
+        na, nb, nc = card[a], card[b], card[c]
+        ncell = na * nb * nc
+        if ncell > args.max_cells:
+            continue
+        ha, hb, hc = codes[a][hist_mask], codes[b][hist_mask], codes[c][hist_mask]
+        m3, cnt = group_mean((ha * nb + hb) * nc + hc, ncell, rh, args.k)
+
+        # 저차 성분을 3차 격자 위로 펼쳐서 뺀다
+        ai = np.repeat(np.arange(na), nb * nc)
+        bi = np.tile(np.repeat(np.arange(nb), nc), na)
+        ci = np.tile(np.arange(nc), na * nb)
+        dev = (m3
+               - pair[(a, b)][ai * nb + bi]
+               - pair[(a, c)][ai * nc + ci]
+               - pair[(b, c)][bi * nc + ci]
+               + marg[a][ai] + marg[b][bi] + marg[c][ci] - mu)
+        dev = np.where(cnt > 0, dev, 0.0)
+
+        d = dev[(codes[a][eval_mask] * nb + codes[b][eval_mask]) * nc
+                + codes[c][eval_mask]]
+        gain = 100000.0 * np.mean(2 * d * re_ - d ** 2) / denom
+        rows.append((a, b, c, ncell, gain))
+    print(f"3차 평가 {len(rows):,}개 [{time.time()-t:.0f}s]\n")
+
+    rows.sort(key=lambda r: -r[4])
+    print(f"=== 순수 3차 상호작용 상위 {args.top} "
+          f"(현재 모델이 못 잡는 것, 시점 분리) ===")
+    print(f"{'A x B x C':>76}{'셀':>6}{'이득':>9}")
+    print("-" * 92)
+    for a, b, c, nc_, g in rows[:args.top]:
+        print(f"{a + ' x ' + b + ' x ' + c:>76}{nc_:6d}{g:9.2f}")
+    pos = sum(1 for r in rows if r[4] > 0)
+    print(f"\n양수 {pos} / 전체 {len(rows):,}개")
+    print(f"최대 {rows[0][4]:.2f}  (참고: 2차 최대는 +8.05, "
+          f"채택 기준은 로컬 +15~20)")
+    return rows
 
 
 def qbucket(s, q):
@@ -161,11 +255,22 @@ def main():
     y = df[TARGET].to_numpy(dtype=np.float64)
     season = df["season"].to_numpy()
 
+    # 평가 폴드를 바꾸면 이력은 그 이전 시즌 전부가 된다. 예측 캐시는
+    # extrap_test.py 가 만든 것(2020~2024, L10)을 쓴다.
+    hist_f, eval_f, cache_name = HIST, EVAL, f"{args.model}_seed42"
+    if args.eval_fold:
+        eval_f = args.eval_fold
+        hist_f = [Y for Y in [2020, 2021, 2022, 2023] if Y < eval_f]
+        cache_name = "L10_seed42"
+        globals()["CACHE"] = "./.extrapcache"
+        if not hist_f:
+            raise SystemExit("이력 폴드가 없다")
+
     # ---- 기준선 ----
     p0 = np.full(len(df), np.nan)
     if args.baseline == "model":
-        for Y in HIST + [EVAL]:
-            path = os.path.join(CACHE, f"{Y}_{args.model}_seed42.npy")
+        for Y in hist_f + [eval_f]:
+            path = os.path.join(CACHE, f"{Y}_{cache_name}.npy")
             if not os.path.exists(path):
                 raise SystemExit(
                     f"{path} 없음 — 먼저 blend_test.py 를 돌려 예측 캐시를 만들 것")
@@ -174,21 +279,21 @@ def main():
             if len(pred) != m.sum():
                 raise SystemExit(f"{path} 길이 {len(pred)} != {Y} 시즌 행 {m.sum()}")
             p0[m] = pred
-        print(f"기준선: {args.model} 캐시 예측 (시즌 {HIST + [EVAL]})")
+        print(f"기준선: 캐시 예측 {cache_name} (시즌 {hist_f + [eval_f]})")
     else:
         # 예전 방식 — 시즌 평균만. 쌍별 주변부는 pure 처리로 따로 뺀다.
-        for Y in HIST + [EVAL]:
+        for Y in hist_f + [eval_f]:
             m = season == Y
             p0[m] = y[m].mean()
         print("기준선: 시즌 평균 (가법. 예전 방식과 같은 성격)")
 
     resid = y - p0
-    hist_mask = np.isin(season, HIST)
-    eval_mask = season == EVAL
+    hist_mask = np.isin(season, hist_f)
+    eval_mask = season == eval_f
     r = y[eval_mask].mean()
     denom = r * (1 - r)
-    print(f"이력 {hist_mask.sum():,} 행 (시즌 {HIST}) -> "
-          f"평가 {eval_mask.sum():,} 행 (시즌 {EVAL})")
+    print(f"이력 {hist_mask.sum():,} 행 (시즌 {hist_f}) -> "
+          f"평가 {eval_mask.sum():,} 행 (시즌 {eval_f})")
     print(f"평가 시즌 잔차 평균 {resid[eval_mask].mean():+.5f} "
           f"(중심 편차) | 기준선 점수 "
           f"{max(0, 100000*(1-(resid[eval_mask]**2).mean()/denom)):.2f}\n")
@@ -199,6 +304,15 @@ def main():
     card = {n: int(codes[n].max()) + 1 for n in names}
     print(f"피처 {len(names)}개 코드화 [{time.time()-t:.0f}s] | "
           f"쌍 {len(names)*(len(names)-1)//2}개", flush=True)
+
+    if args.order == 3:
+        scan_order3(codes, names, card, resid, hist_mask, eval_mask, denom, args)
+        print("""
+읽는 법. 2차가 전부 0 으로 보이는 자리는 탐욕적 트리가 경로 자체를 못 찾는다 —
+루트에서도, 두 번째 분할에서도 이득이 없기 때문이다. 사각지대 논리(4-7)가
+차수를 올리면 더 강해진다. 다만 3차 셀은 표본이 얇아 추정이 거칠고, 값은
+**후보를 좁히는 데만** 쓴다. 채택은 interact_feat.py 로 확인할 것.""")
+        return
 
     t = time.time()
     rows = []
@@ -215,7 +329,7 @@ def main():
 
     rows.sort(key=lambda r_: -r_[3])
     print(f"=== 현재 모델이 못 잡는 상호작용 상위 {args.top} "
-          f"({HIST} -> {EVAL}, 시점 분리) ===")
+          f"({hist_f} -> {eval_f}, 시점 분리) ===")
     print(f"{'A':>38} x {'B':<38}{'셀':>5}{'inter':>9}{'main':>9}")
     print("-" * 104)
     for a, b, nc, gi, ga in rows[:args.top]:
