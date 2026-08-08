@@ -37,7 +37,14 @@ def main():
           f"alpha={bundle.get('alpha')} center={bundle.get('center'):.4f}")
     print(f"  spec={bundle.get('spec')}")
     print(f"  shift={bundle.get('shift')} detrend={bundle.get('detrend')}")
+    b, s = bundle.get("blend"), bundle.get("center_shift")
+    blend_txt = "없음" if not b else "lr w=%.2f" % b["weight"]
+    shift_txt = ("없음" if not s else
+                 "%s lam=%.3f c=%.4f" % (s["feature"], s["lam"], s["c"]))
+    print(f"  혼합={blend_txt} | 중심보정={shift_txt}")
     if bundle.get("shift") is not None:
+        # 4-3 의 위반 경로. 평가셋 전체의 prev1 평균으로 중심을 옮긴다.
+        # center_shift 는 이것과 다르다 — 그 행 자신의 anchor 만 쓴다.
         raise SystemExit("🚫 shift 가 켜져 있다 — 규칙 위반 (4-3). 제출 불가")
 
     # ---- 평가셋 대역 만들기 ----

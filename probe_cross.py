@@ -1,39 +1,52 @@
-r"""모든 피처 쌍의 '순수 상호작용'을 점수로 환산해 훑는다.
+r"""피처 쌍 중 **현재 모델이 못 잡는 것**을 점수로 환산해 훑는다.
 
-왜 필요한가. hand_mix (pitcher_hand x batter_hand) 컬럼 하나가 +23.10 이었다.
-그 두 피처는 4년 내내 모델 안에 있었는데도 트리가 상호작용을 못 찾았다. 이유는
-플래툰 효과가 **주변부 효과가 0 인 순수 상호작용**이기 때문이다.
+왜 이 도구가 있는가. hand_mix (pitcher_hand x batter_hand) 컬럼 하나가 +24.66
+이었다 (4-7). 그 두 피처는 4년 내내 모델 안에 있었는데도 트리가 상호작용을
+못 찾았다. 플래툰 효과가 **주변부 효과가 0 인 순수 상호작용**이기 때문이다.
 
         좌타   우타
   좌완    +      -
   우완    -      +
 
 pitcher_hand 만 봐도, batter_hand 만 봐도 평균 성공률은 그대로다. 탐욕적 트리는
-루트에서 주변부 이득으로 분할을 고르므로 이런 쌍은 영원히 선택되지 않는다.
-트리 수를 아무리 늘려도 못 찾는다 — 구조적 사각지대다.
+루트에서 주변부 이득으로 분할을 고르므로 이런 쌍은 영원히 선택되지 않는다 —
+파라미터가 아니라 알고리즘의 구조적 사각지대다. 나머지 쌍에도 같은 자리가
+있을 수 있으니 전부 훑는다.
 
-그렇다면 나머지 쌍에도 같은 사각지대가 있을 수 있다. 전부 훑는다.
+기준선을 무엇으로 두느냐가 이 도구의 전부다.
 
-무엇을 재는가. 상관계수가 아니라 **점수**다. 앞서 상관으로 두 번 속았다 —
-pitcher x batter_hand 의 +0.53 은 리그 성분이 섞인 값이었고, park 의 +0.819 는
-팀 교란이었다(실제로 넣으니 -23.09). 그래서 여기서는 "이 상호작용을 넣으면
-Brier 가 실제로 얼마나 줄어드는가"를 시점 분리로 직접 잰다.
+  --baseline additive   그 두 피처만 쓰는 5분위 가법 모형 (예전 방식)
+  --baseline model      **실제 base 모델의 예측** (기본값)
 
-    이전 시즌에서:  dev[a,b] = rate[a,b] - mu - (rate[a]-mu) - (rate[b]-mu)
-                    표본 축소 n/(n+k) 후
-    평가 시즌에서:  pred0 = 그 시즌 자체의 가법 모형 (주변부까지는 공짜로 준다)
-                    pred1 = pred0 + dev
-                    이득 = mean(2*dev*(y-pred0) - dev^2)  ->  x 100000/r(1-r)
+가법 기준선은 실제 48피처 HGB 보다 훨씬 약하다. 그래서 주변부 효과가 강한 쌍
+(`asof x asof`)이 상위를 독식했는데, 정작 그건 HGB 가 이미 잡고 있는 것들이었다
+(`asof_prev3 x asof_prev5` 가 +314 로 1위였다). 알고 싶은 것은 "이 쌍에 신호가
+있는가"가 아니라 **"현재 모델이 그걸 놓치고 있는가"** 다.
 
-pred0 을 평가 시즌 자체 데이터로 맞추는 것은 기준선에 유리하게 준 것이다.
-주변부는 트리가 이미 잘 잡으므로, 순수 상호작용분만 신용한다.
+model 기준선은 그 질문에 직접 답한다. 모델 잔차 `y - p` 에 셀 구조가 남아
+있는지만 본다. 남아 있지 않으면 이미 잡고 있는 것이고, 컬럼으로 줘도 소용없다.
 
-한계. 이건 그 두 피처만 쓰는 가법 모형 대비 이득이라 상한이다. 다른 피처가
-같은 정보를 이미 담고 있으면 실제 이득은 줄어든다. **후보를 좁히는 데만 쓰고
-채택은 반드시 interact_feat.py 로 확인할 것** — park 이 그래서 걸렸다.
+  이전 시즌 잔차에서:  dev[a,b] = 셀 평균 잔차 - a 주변부 - b 주변부 + 전체
+                       표본 축소 n/(n+k) 후
+  평가 시즌에서:       이득 = mean(2*dev*(y-p) - dev^2)  ->  x 100000/r(1-r)
+
+시점을 분리한다 — 이전 시즌에서 재고 평가 시즌에서 확인한다. 같은 시즌에서
+재고 그 시즌에서 확인하면 표본 노이즈가 그대로 이득으로 잡힌다.
+
+**자체 검증.** 캐시된 예측은 `same_hand` 가 들어간 모델의 것이다. 그러므로
+pitcher_hand x batter_hand 는 **0 근처**로 나와야 한다 — 이미 컬럼으로 줬으니까.
+가법 기준선에서는 이게 +63.56 으로 상위였다. 그 대조가 도구가 제대로 도는지를
+말해 준다. 실행하면 맨 아래 자체 검증 줄에 찍힌다.
+
+예측 캐시는 blend_test.py 가 만든다 (`.blendcache/`). 없으면 먼저 돌릴 것.
+
+한계. `main` 열은 그 2차원 투영에서 모델이 놓친 것 전부이고, `inter` 열은 그중
+순수 상호작용분이다. 사각지대 이론이 겨냥하는 것은 `inter` 쪽이다. 어느 쪽이든
+**후보를 좁히는 데만 쓰고 채택은 interact_feat.py 로 확인할 것** — 옛 도구에서
+park 이 안정성 상관 +0.819 로 최상위였는데 실제로 넣으니 -23.09 였다 (4-6).
 
     .\.venv\Scripts\python.exe probe_cross.py
-    .\.venv\Scripts\python.exe probe_cross.py --top 40
+    .\.venv\Scripts\python.exe probe_cross.py --baseline additive   # 예전 방식
 """
 import argparse
 import itertools
@@ -45,15 +58,19 @@ import pandas as pd
 
 DATA = "./data/train.csv"
 TARGET = "control_success"
-FOLDS = [2021, 2022, 2024]      # 2023 은 어떤 구성으로도 0점이라 제외 (README 4-6)
-K = 200                          # 표본 축소. 저차원 쌍은 셀이 커서 영향이 작다
+CACHE = "./.blendcache"
+HIST = [2021, 2022]      # 여기서 셀 구조를 재고
+EVAL = 2024              # 여기서 확인한다 (학습 시즌이 가장 많아 실제 조건에 가깝다)
+K = 200                  # 표본 축소. 저차원 쌍은 셀이 커서 영향이 작다
 
 
 def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("--top", type=int, default=25)
-    p.add_argument("--folds", default=",".join(map(str, FOLDS)))
+    p.add_argument("--baseline", choices=["model", "additive"], default="model")
     p.add_argument("--k", type=int, default=K)
+    p.add_argument("--max-cells", type=int, default=400)
+    p.add_argument("--model", default="hgb", help="캐시에서 쓸 모델 이름")
     return p.parse_args()
 
 
@@ -76,17 +93,16 @@ def build_codes(df):
         if v.max() >= 1:
             out[name] = v
 
-    # 저차원 원본 — 그대로 코드화
     for c in ["game_month", "game_dayofweek", "top_bottom", "game_type",
               "balls_before", "strikes_before", "outs_before",
               "runner_on_1b", "runner_on_2b", "runner_on_3b", "num_runners_on",
               "base_state", "pitcher_hand", "batter_hand",
               "pitcher_team_id", "batter_team_id"]:
         put(c, df[c])
-
     put("inning", np.clip(df["inning"], 1, 10))
+    # 4-7 에서 채택한 파생. 이미 모델에 들어 있으므로 여기서는 0 이 나와야 한다
+    put("same_hand", (df["pitcher_hand"] == df["batter_hand"]).astype(int))
 
-    # 연속형 — 분위수로 낮춘다. 구간 수는 셀이 너무 잘게 쪼개지지 않을 만큼
     for c, q in [("run_total_before", 5), ("score_diff_pitcher_team", 5),
                  ("li", 5), ("home_win_expectancy", 5),
                  ("asof_pitcher_n", 5), ("asof_pitcher_success_rate", 5),
@@ -106,54 +122,37 @@ def build_codes(df):
     return out
 
 
-def cell_stats(ia, ib, nb, y, n_rows_cells):
-    """셀별 합과 개수. bincount 한 번으로 끝난다."""
-    idx = ia * nb + ib
-    cnt = np.bincount(idx, minlength=n_rows_cells).astype(np.float64)
-    tot = np.bincount(idx, weights=y, minlength=n_rows_cells)
-    return cnt, tot
-
-
-def pair_gain(ca, cb, na, nb, y, hist_mask, val_mask, k):
-    """이전 시즌 상호작용을 평가 시즌에 적용했을 때의 점수 이득."""
+def cell_dev(ca, cb, na, nb, resid, mask, k, pure=True):
+    """셀별 잔차 편차. pure 면 주변부를 빼고 순수 상호작용만 남긴다."""
+    ia, ib, r = ca[mask], cb[mask], resid[mask]
     ncell = na * nb
-
-    # ---- 이전 시즌에서 순수 상호작용 추정 ----
-    ia, ib, yh = ca[hist_mask], cb[hist_mask], y[hist_mask]
-    cnt, tot = cell_stats(ia, ib, nb, yh, ncell)
-    ca_cnt = np.bincount(ia, minlength=na).astype(np.float64)
-    ca_tot = np.bincount(ia, weights=yh, minlength=na)
-    cb_cnt = np.bincount(ib, minlength=nb).astype(np.float64)
-    cb_tot = np.bincount(ib, weights=yh, minlength=nb)
-
-    mu = yh.mean()
-    a_eff = np.divide(ca_tot, ca_cnt, out=np.full(na, mu), where=ca_cnt > 0) - mu
-    b_eff = np.divide(cb_tot, cb_cnt, out=np.full(nb, mu), where=cb_cnt > 0) - mu
+    idx = ia * nb + ib
+    cnt = np.bincount(idx, minlength=ncell).astype(np.float64)
+    tot = np.bincount(idx, weights=r, minlength=ncell)
     cell = np.divide(tot, cnt, out=np.zeros(ncell), where=cnt > 0)
-    dev = cell - mu - np.repeat(a_eff, nb) - np.tile(b_eff, na)
-    dev = np.where(cnt > 0, dev * (cnt / (cnt + k)), 0.0)
 
-    # ---- 평가 시즌에서 이득 측정 ----
-    # 기준선(주변부)은 평가 시즌 자체로 맞춘다 — 트리가 이미 잘 잡는 부분이므로
-    # 공짜로 주고, 순수 상호작용분만 신용한다.
-    ja, jb, yv = ca[val_mask], cb[val_mask], y[val_mask]
-    va_cnt = np.bincount(ja, minlength=na).astype(np.float64)
-    va_tot = np.bincount(ja, weights=yv, minlength=na)
-    vb_cnt = np.bincount(jb, minlength=nb).astype(np.float64)
-    vb_tot = np.bincount(jb, weights=yv, minlength=nb)
-    muv = yv.mean()
-    va = np.divide(va_tot, va_cnt, out=np.full(na, muv), where=va_cnt > 0) - muv
-    vb = np.divide(vb_tot, vb_cnt, out=np.full(nb, muv), where=vb_cnt > 0) - muv
+    if pure:
+        a_cnt = np.bincount(ia, minlength=na).astype(np.float64)
+        a_tot = np.bincount(ia, weights=r, minlength=na)
+        b_cnt = np.bincount(ib, minlength=nb).astype(np.float64)
+        b_tot = np.bincount(ib, weights=r, minlength=nb)
+        mu = r.mean()
+        a_eff = np.divide(a_tot, a_cnt, out=np.full(na, mu), where=a_cnt > 0) - mu
+        b_eff = np.divide(b_tot, b_cnt, out=np.full(nb, mu), where=b_cnt > 0) - mu
+        cell = cell - mu - np.repeat(a_eff, nb) - np.tile(b_eff, na)
 
-    pred0 = muv + va[ja] + vb[jb]
-    d = dev[ja * nb + jb]
-    red = np.mean(2 * d * (yv - pred0) - d ** 2)
-    return 100000.0 * red / (muv * (1 - muv))
+    return np.where(cnt > 0, cell * (cnt / (cnt + k)), 0.0)
+
+
+def gain_on(dev, ca, cb, nb, resid, mask, denom):
+    """이전 시즌에서 잰 dev 를 평가 시즌에 얹었을 때의 점수 이득."""
+    d = dev[ca[mask] * nb + cb[mask]]
+    red = np.mean(2 * d * resid[mask] - d ** 2)
+    return 100000.0 * red / denom
 
 
 def main():
     args = parse_args()
-    folds = [int(f) for f in args.folds.split(",")]
     if not os.path.exists(DATA):
         raise SystemExit(f"{DATA} 없음")
 
@@ -162,40 +161,88 @@ def main():
     y = df[TARGET].to_numpy(dtype=np.float64)
     season = df["season"].to_numpy()
 
+    # ---- 기준선 ----
+    p0 = np.full(len(df), np.nan)
+    if args.baseline == "model":
+        for Y in HIST + [EVAL]:
+            path = os.path.join(CACHE, f"{Y}_{args.model}_seed42.npy")
+            if not os.path.exists(path):
+                raise SystemExit(
+                    f"{path} 없음 — 먼저 blend_test.py 를 돌려 예측 캐시를 만들 것")
+            m = season == Y
+            pred = np.load(path)
+            if len(pred) != m.sum():
+                raise SystemExit(f"{path} 길이 {len(pred)} != {Y} 시즌 행 {m.sum()}")
+            p0[m] = pred
+        print(f"기준선: {args.model} 캐시 예측 (시즌 {HIST + [EVAL]})")
+    else:
+        # 예전 방식 — 시즌 평균만. 쌍별 주변부는 pure 처리로 따로 뺀다.
+        for Y in HIST + [EVAL]:
+            m = season == Y
+            p0[m] = y[m].mean()
+        print("기준선: 시즌 평균 (가법. 예전 방식과 같은 성격)")
+
+    resid = y - p0
+    hist_mask = np.isin(season, HIST)
+    eval_mask = season == EVAL
+    r = y[eval_mask].mean()
+    denom = r * (1 - r)
+    print(f"이력 {hist_mask.sum():,} 행 (시즌 {HIST}) -> "
+          f"평가 {eval_mask.sum():,} 행 (시즌 {EVAL})")
+    print(f"평가 시즌 잔차 평균 {resid[eval_mask].mean():+.5f} "
+          f"(중심 편차) | 기준선 점수 "
+          f"{max(0, 100000*(1-(resid[eval_mask]**2).mean()/denom)):.2f}\n")
+
     t = time.time()
     codes = build_codes(df)
     names = sorted(codes)
     card = {n: int(codes[n].max()) + 1 for n in names}
     print(f"피처 {len(names)}개 코드화 [{time.time()-t:.0f}s] | "
-          f"쌍 {len(names)*(len(names)-1)//2}개\n")
-
-    masks = [(Y, season < Y, season == Y) for Y in folds]
+          f"쌍 {len(names)*(len(names)-1)//2}개", flush=True)
 
     t = time.time()
     rows = []
     for a, b in itertools.combinations(names, 2):
         ca, cb, na, nb = codes[a], codes[b], card[a], card[b]
-        if na * nb > 400:        # 셀이 너무 잘게 쪼개지면 추정이 무너진다
+        if na * nb > args.max_cells:
             continue
-        g = [pair_gain(ca, cb, na, nb, y, hm, vm, args.k) for _, hm, vm in masks]
-        rows.append((a, b, na * nb, float(np.mean(g)), g))
+        g_int = gain_on(cell_dev(ca, cb, na, nb, resid, hist_mask, args.k, True),
+                        ca, cb, nb, resid, eval_mask, denom)
+        g_all = gain_on(cell_dev(ca, cb, na, nb, resid, hist_mask, args.k, False),
+                        ca, cb, nb, resid, eval_mask, denom)
+        rows.append((a, b, na * nb, g_int, g_all))
     print(f"평가 완료 [{time.time()-t:.0f}s]\n")
 
-    rows.sort(key=lambda r: -r[3])
-    print(f"=== 순수 상호작용 이득 상위 {args.top} (시점 분리, 3폴드 평균) ===")
-    print(f"{'A':>38} x {'B':<38}{'셀':>5}{'평균':>9}   폴드별")
-    print("-" * 118)
-    for a, b, nc, m, g in rows[:args.top]:
-        sign = "" if all(x > 0 for x in g) or all(x < 0 for x in g) else "  ★엇갈림"
-        print(f"{a:>38} x {b:<38}{nc:5d}{m:9.2f}   "
-              + " ".join(f"{x:7.2f}" for x in g) + sign)
+    rows.sort(key=lambda r_: -r_[3])
+    print(f"=== 현재 모델이 못 잡는 상호작용 상위 {args.top} "
+          f"({HIST} -> {EVAL}, 시점 분리) ===")
+    print(f"{'A':>38} x {'B':<38}{'셀':>5}{'inter':>9}{'main':>9}")
+    print("-" * 104)
+    for a, b, nc, gi, ga in rows[:args.top]:
+        print(f"{a:>38} x {b:<38}{nc:5d}{gi:9.2f}{ga:9.2f}")
 
-    neg = [r for r in rows if r[3] < 0]
-    print(f"\n양수 {len(rows)-len(neg)} / 전체 {len(rows)}쌍")
+    pos = sum(1 for x in rows if x[3] > 0)
+    print(f"\ninter 양수 {pos} / 전체 {len(rows)}쌍")
+
+    # ---- 자체 검증 ----
+    # same_hand 는 이미 모델에 있으므로 0 근처여야 한다. 가법 기준선에서는
+    # 이 쌍이 +63.56 으로 상위였다 (4-7 이전 도구).
+    chk = [x for x in rows if {x[0], x[1]} == {"pitcher_hand", "batter_hand"}]
+    if chk:
+        a, b, nc, gi, ga = chk[0]
+        rank = rows.index(chk[0]) + 1
+        print(f"\n자체 검증  pitcher_hand x batter_hand : inter {gi:+.2f} "
+              f"(전체 {len(rows)}쌍 중 {rank}위)")
+        print(f"  이미 same_hand 로 모델에 넣었으므로 0 근처여야 한다. "
+              f"예전 가법 기준선에서는 +63.56 으로 상위였다")
+
     print("""
-주의. 이 값은 그 두 피처만 쓰는 가법 모형 대비 이득이라 상한이다. 다른 피처가
-같은 정보를 담고 있으면 실제 이득은 줄어든다. 후보를 좁히는 데만 쓰고 채택은
-interact_feat.py 로 확인할 것 — park 이 상관 +0.819 였는데 실제로는 -23.09 였다.""")
+읽는 법.
+  inter  주변부를 뺀 순수 상호작용분. 4-7 의 사각지대 이론이 겨냥하는 값이다
+  main   그 2차원 투영에서 모델이 놓친 것 전부 (주변부 miss 포함)
+  둘 다 "이전 시즌에서 재고 평가 시즌에서 확인한" 값이라 표본 노이즈는 빠져 있다.
+  다만 폴드 하나짜리이므로 크기는 거칠다 — 후보를 좁히는 데만 쓰고 채택은
+  interact_feat.py 로 3폴드 x 2시드 확인할 것 (4-6).""")
 
 
 if __name__ == "__main__":

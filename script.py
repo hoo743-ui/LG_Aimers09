@@ -94,14 +94,22 @@ def predict_proba(bundle, X):
     """제구 성공 확률 예측.
 
     각 행은 자기 자신의 피처만으로 예측된다. 평가셋의 다른 행을 참조하는
-    연산은 하지 않는다.
+    연산은 하지 않는다 — 아래 세 단계 어디에도 평가셋 집계가 없다.
 
     모델 파일은 두 형식을 허용한다.
-      - dict  : {"models": [...], "alpha": float, "center": float}
-                여러 모델의 예측을 평균한 뒤 중심값 쪽으로 축소한다.
-                축소는 과신을 줄여 Brier 를 낮추기 위한 것이고, alpha 와
-                center 는 학습 시점에 정해져 모델 파일에 담긴 상수다.
+      - dict  : {"models": [...], "alpha": float, "center": float,
+                 "blend": {"model": ..., "weight": float} | None,
+                 "center_shift": {"feature": str, "lam": float, "c": float} | None}
       - 그 외 : 단일 estimator (베이스라인 호환)
+
+    순서는 학습 때 측정한 것과 같아야 한다.
+      1) 앙상블 평균
+      2) 계열 혼합 — 로지스틱을 소량 섞는다. 단독으로는 크게 지지만 실패 방식이
+         달라 오차가 상쇄된다
+      3) 과신 교정 — center 쪽으로 alpha 배 축소 (alpha 와 center 는 상수)
+      4) 중심 보정 — p + lam*(그 행의 anchor - c). lam 과 c 는 학습 시점 상수이고
+         anchor 는 그 행 자신의 asof_* 공식 입력이다. **평가셋 전체의 anchor
+         평균을 내는 것은 규칙 위반이며, 여기서는 하지 않는다.**
     """
     if not isinstance(bundle, dict):
         return bundle.predict_proba(X)[:, 1]
@@ -113,9 +121,24 @@ def predict_proba(bundle, X):
         acc = p if acc is None else acc + p
     preds = acc / len(models)
 
+    blend = bundle.get("blend")
+    if blend:
+        w = float(blend["weight"])
+        preds = (1.0 - w) * preds + w * blend["model"].predict_proba(X)[:, 1]
+
     alpha = float(bundle.get("alpha", 1.0))
     center = float(bundle.get("center", 0.5))
     preds = center + alpha * (preds - center)
+
+    shift = bundle.get("center_shift")
+    if shift:
+        col = shift["feature"]
+        if col not in X.columns:
+            raise ValueError(f"중심 보정 anchor 컬럼이 없다: {col}")
+        # 결측은 c 로 메운다 — 그 행에서는 보정이 0 이 된다
+        a = X[col].fillna(shift["c"]).to_numpy(dtype=float)
+        preds = preds + float(shift["lam"]) * (a - float(shift["c"]))
+
     return preds.clip(0.0, 1.0)
 
 
@@ -166,10 +189,14 @@ def main():
     print("Load model...")
     model = joblib.load(MODEL_PATH)
     if isinstance(model, dict):
+        b, s = model.get("blend"), model.get("center_shift")
         print(f" OK. 앙상블 {len(model['models'])}개 "
               f"alpha={model.get('alpha', 1.0):.4f} "
               f"center={model.get('center', 0.5):.4f} "
               f"features={len(model.get('features', []))}")
+        blend_txt = "없음" if not b else "lr w=%.2f" % b["weight"]
+        shift_txt = "없음" if not s else "%s lam=%.3f" % (s["feature"], s["lam"])
+        print(f"     혼합={blend_txt} | 중심보정={shift_txt}")
     else:
         print(f" OK. n_features={getattr(model, 'n_features_in_', '?')}")
 

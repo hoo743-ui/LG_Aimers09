@@ -32,8 +32,10 @@ import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import HistGradientBoostingClassifier
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OrdinalEncoder
+from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder, StandardScaler
 
 DATA_DIR = "./data"
 MODEL_PATH = "./model/rf.pkl"
@@ -98,6 +100,33 @@ def add_derived(df):
 
 DERIVED = ["same_hand"]
 
+# 계열 혼합 (4-8) 과 중심 보정 (4-9) 의 기본값. 둘 다 3폴드에서 부호가 일치하고
+# 서로 거의 독립이다 (겹침 -0.1 ~ -3.4). 2024 폴드 기준 각각 +9.34 / +7.81,
+# 합쳐서 +16.03.
+BLEND_LR_W = 0.10
+CENTER_LAM = 0.03
+
+
+def make_linear(features):
+    """혼합용 로지스틱. 단독으로는 HGB 에 크게 지지만(2024 에서 164.59) 실패
+    방식이 달라 섞으면 이득이 난다 — 오차 상쇄다 (4-8).
+
+    결측은 중앙값으로 메우고 결측 표시를 따로 준다. HGB 는 결측을 분기로 직접
+    배우지만 선형 모형은 그걸 못 한다.
+    """
+    num = [c for c in features if c not in CAT_COLS]
+    return Pipeline([
+        ("pre", ColumnTransformer([
+            ("cat", OneHotEncoder(handle_unknown="ignore", min_frequency=0.001),
+             CAT_COLS),
+            ("num", Pipeline([
+                ("imp", SimpleImputer(strategy="median", add_indicator=True)),
+                ("sc", StandardScaler()),
+            ]), num),
+        ])),
+        ("clf", LogisticRegression(C=0.1, max_iter=200, solver="lbfgs")),
+    ])
+
 
 def parse_args():
     p = argparse.ArgumentParser()
@@ -132,6 +161,13 @@ def parse_args():
                         "제출 불가이며 실험 재현용으로만 남겨둔다 (README 4-6).")
     p.add_argument("--no-derived", action="store_true",
                    help="파생 컬럼(same_hand)을 빼고 학습한다. 기존 결과와 대조용")
+    p.add_argument("--blend-lr", type=float, default=BLEND_LR_W,
+                   help="로지스틱 혼합 비중 (4-8). 0 이면 끈다")
+    p.add_argument("--center-lam", type=float, default=CENTER_LAM,
+                   help="중심 보정 계수 (4-9). p' = p + lam*(그 행의 prev1 - c). "
+                        "lam 과 c 는 학습 시점 상수이고 anchor 는 그 행 자신의 "
+                        "공식 입력이므로 행 독립이다 — 4-3 위반(평가셋 전체의 "
+                        "prev1 평균으로 중심 이동)과 근본적으로 다르다. 0 이면 끈다")
     p.add_argument("--skip-val", action="store_true",
                    help="홀드아웃 검증을 건너뛰고 전체 재학습·저장만 한다. 같은 "
                         "설정의 검증 점수를 이미 알고 있을 때 시간을 절반으로 "
@@ -303,6 +339,26 @@ def main():
     p_ens = acc / len(members)
     s_raw = score_of(y_va, p_ens, base)
 
+    # ---- 계열 혼합 (4-8) 과 중심 보정 (4-9) ----
+    # 저장 경로와 **같은 순서**로 적용해 홀드아웃 수치를 낸다. 여기서 재지 않으면
+    # 실제 추론이 무엇을 내는지 모른 채 제출하게 된다.
+    p_mix = p_ens
+    if args.blend_lr > 0:
+        t = time.time()
+        lr_val = make_linear(features)
+        lr_val.fit(X_tr, y_tr)
+        p_lr = lr_val.predict_proba(X_va)[:, 1]
+        p_mix = (1 - args.blend_lr) * p_mix + args.blend_lr * p_lr
+        print(f"\n  혼합용 로지스틱 단독 {score_of(y_va, p_lr, base):8.2f} "
+              f"[{time.time()-t:.0f}s]")
+    s_mix = score_of(y_va, p_mix, base)
+
+    p_fin = p_mix
+    if args.center_lam > 0:
+        a = X_va[PREV1].fillna(center).to_numpy(dtype=float)
+        p_fin = np.clip(p_mix + args.center_lam * (a - center), 0.0, 1.0)
+    s_fin = score_of(y_va, p_fin, base)
+
     # ---- 과신 교정 ----
     a = fit_shrinkage(y_va, p_ens, center)
     p_cal = np.clip(center + a * (p_ens - center), 0.0, 1.0)
@@ -318,6 +374,13 @@ def main():
     print("\n=== 결과 ===")
     print(f"  앙상블 원본     {s_raw:8.2f}   범위 {p_ens.min():.4f}~{p_ens.max():.4f}")
     print(f"  중심 편차      {p_ens.mean() - r:+8.4f}   (예측 {p_ens.mean():.4f} vs 실제 {r:.4f})")
+    if args.blend_lr > 0:
+        print(f"  + 계열 혼합    {s_mix:8.2f}   ({s_mix - s_raw:+.2f}) "
+              f"lr 비중 {args.blend_lr}")
+    if args.center_lam > 0:
+        print(f"  + 중심 보정    {s_fin:8.2f}   ({s_fin - s_mix:+.2f}) "
+              f"lam={args.center_lam}  편차 {p_fin.mean() - r:+.4f}")
+    print(f"  ** 최종        {s_fin:8.2f}   (원본 대비 {s_fin - s_raw:+.2f})")
     print(f"  국면 보정 후    {s_shift:8.2f}   ({s_shift - s_raw:+.2f}) "
           f"추정 {r_hat:.4f} {'[적용]' if args.shift else '[미적용 — --no-shift]'}")
     if a < 0.97:
@@ -361,10 +424,31 @@ def save_bundle(args, members, train, features, alpha_out):
         models.append(strip_rng(m))
         print(f"  {label} (n_iter={n_iter_full}) 완료 [{time.time()-t:.0f}s]")
 
+    # ---- 혼합용 로지스틱 ----
+    blend = None
+    if args.blend_lr > 0:
+        t = time.time()
+        lr = make_linear(features)
+        lr.fit(train[features], train[TARGET])
+        blend = {"model": lr, "weight": float(args.blend_lr)}
+        print(f"  혼합 로지스틱 (비중 {args.blend_lr}) 완료 [{time.time()-t:.0f}s]")
+
+    center_val = float(train[TARGET].mean())
+    shift_cfg = None
+    if args.center_lam > 0:
+        # anchor 는 그 행 자신의 prev1. c 는 학습 데이터 성공률(상수).
+        shift_cfg = {"feature": PREV1, "lam": float(args.center_lam),
+                     "c": center_val}
+        print(f"  중심 보정: {PREV1} lam={args.center_lam} c={center_val:.4f}")
+
     bundle = {
         "models": models,
         "alpha": alpha_out,
-        "center": float(train[TARGET].mean()),
+        "center": center_val,
+        # 계열 혼합 (4-8). 순수 sklearn 객체라 6-3 을 지킨다
+        "blend": blend,
+        # 중심 보정 (4-9). 그 행 자신의 anchor 만 쓰므로 행 독립이다
+        "center_shift": shift_cfg,
         # 학습에 쓴 컬럼과 순서. 추론 때 test.csv 에서 이대로 골라내야 한다.
         # 열이 하나라도 다르면 ColumnTransformer 가 이름 불일치로 실패한다.
         "features": list(features),
