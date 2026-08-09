@@ -1,4 +1,4 @@
-r"""축소계수 alpha 를 **작게 고정**해서 쓸 수 있는가.
+﻿r"""축소계수 alpha 를 **작게 고정**해서 쓸 수 있는가.
 
 배경. 2024 폴드 최적 a 는 1.128 이고 그때 이득이 +19.40 이다 — 남은 후보 중
 상한이 가장 크다. 그런데 4-5 는 축소 보정을 기각했고, survey.py 의 LOO 이식도
@@ -33,8 +33,12 @@ TARGET = "control_success"
 PREV1 = "asof_pitcher_prev1_game_success_rate"
 FOLDS = [2021, 2022, 2024]
 W_LR = 0.10        # 4-8 확정
+W_CB = 0.60        # 4-14 확정 — 주력이 CatBoost 로 바뀌었다
+CB_TAG = "cb_d6_l210_it1100_noid_seed42"
 LAM = 0.03         # 4-9 확정
-ALPHAS = [1.00, 1.01, 1.02, 1.03, 1.04, 1.05, 1.07, 1.10, 1.13]
+# 주력이 바뀌면 캘리브레이션 특성도 바뀐다. CatBoost 는 예측 sd 가 좁고 중심
+# 편차도 작아 최적 alpha 가 1 보다 작을 수도 있다 — 양쪽으로 훑는다.
+ALPHAS = [0.90, 0.95, 0.98, 1.00, 1.02, 1.05, 1.08, 1.10, 1.13]
 
 
 def load(Y, name, seeds=1):
@@ -56,7 +60,8 @@ def main():
     season = df["season"].to_numpy()
     y_all = df[TARGET].to_numpy(dtype=float)
 
-    print(f"순서: 앙상블 -> 혼합(lr {W_LR}) -> alpha -> 중심보정(lam {LAM})")
+    print(f"순서: 앙상블 -> 혼합(hgb {1-W_LR-W_CB:.2f} / cb {W_CB} / lr {W_LR})"
+          f" -> alpha -> 중심보정(lam {LAM})")
     print(f"{'폴드':>7}{'기준':>10}" + "".join(f"{a:9.2f}" for a in ALPHAS))
     print("-" * (17 + 9 * len(ALPHAS)))
 
@@ -68,9 +73,10 @@ def main():
         c = float(y_all[season < Y].mean())        # 학습 데이터 성공률 (상수)
         p_h = load(Y, "hgb")
         p_l = load(Y, "lr")
+        p_c = load(Y, CB_TAG.replace("_seed42", ""))
         a_col = df.loc[m, PREV1].fillna(c).to_numpy(dtype=float) - c
 
-        p_mix = (1 - W_LR) * p_h + W_LR * p_l
+        p_mix = (1 - W_LR - W_CB) * p_h + W_LR * p_l + W_CB * p_c
         cur = np.clip(p_mix + LAM * a_col, 0, 1)   # alpha=1 인 현재 구성
         base = max(0.0, 100000 * (1 - ((cur - y) ** 2).mean() / denom))
 
