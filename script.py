@@ -130,7 +130,18 @@ def predict_proba(bundle, X):
             raise ValueError(f"혼합 비중 합이 범위를 벗어남: {w_rest}")
         acc2 = (1.0 - w_rest) * preds
         for b in parts:
-            acc2 = acc2 + float(b["weight"]) * b["model"].predict_proba(X)[:, 1]
+            Xb = X
+            # 일부 모델(CatBoost)은 특정 컬럼을 **문자열 범주형**으로 학습했다.
+            # 학습 때와 같은 변환을 하지 않으면 조용히 다른 값을 예측한다.
+            # 목록은 번들에 순수 리스트로 담겨 있다 (커스텀 클래스 없음, 6-3).
+            cols = b.get("str_cols")
+            if cols:
+                Xb = X.copy()
+                for c in cols:
+                    if c not in Xb.columns:
+                        raise ValueError(f"혼합 모델이 요구하는 컬럼이 없다: {c}")
+                    Xb[c] = Xb[c].astype(str)
+            acc2 = acc2 + float(b["weight"]) * b["model"].predict_proba(Xb)[:, 1]
         preds = acc2
 
     alpha = float(bundle.get("alpha", 1.0))

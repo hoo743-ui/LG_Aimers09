@@ -104,6 +104,46 @@ def main():
   재보정이득  회수 가능한 총량의 상한. 2023 에서 이게 크면 국면 붕괴는
               "신호가 사라진 것"이 아니라 "수준이 어긋난 것"이다""")
 
+    # ---- 등온 회귀 이식 ----
+    # "완전재보정 716.51" 은 그 폴드의 **정답**으로 구간을 갈아끼운 상한이라
+    # 만들 수 있는 모델이 아니다. 다만 그 모양 보정을 **학습 시즌에서 배워
+    # 평가 시즌에 옮기는 것**은 합법이고 한 번도 안 해봤다.
+    #
+    # 지금까지 시험한 재보정은 파라미터 1개짜리 둘뿐이었다 —
+    # 중심 이동(위치, +7.16 채택)과 alpha(척도, 기각). 등온 회귀는 모양 전체를
+    # 배우므로 파라미터가 많고, 그만큼 이식이 어려울 수 있다.
+    print("\n=== 등온 회귀 이식 (직전 폴드에서 배워 평가 폴드에 적용) ===")
+    print("  '완전재보정' 은 정답을 쓴 상한이다. 이 열이 실제로 쓸 수 있는 값이다.")
+    from sklearn.isotonic import IsotonicRegression
+
+    print(f"{'평가':>6}{'학습원':>9}{'기준':>10}{'등온이식':>10}{'차이':>9}"
+          f"{'(상한)':>10}")
+    print("-" * 56)
+    for i, Y in enumerate(FOLDS):
+        if i == 0:
+            continue
+        src = FOLDS[i - 1]
+        ps = os.path.join(CACHE, f"{src}_{args.config}_seed42.npy")
+        pe = os.path.join(CACHE, f"{Y}_{args.config}_seed42.npy")
+        if not (os.path.exists(ps) and os.path.exists(pe)):
+            continue
+        m_s, m_e = season == src, season == Y
+        iso = IsotonicRegression(out_of_bounds="clip", y_min=0.0, y_max=1.0)
+        iso.fit(np.load(ps), y_all[m_s])
+
+        p = np.load(pe)
+        y = y_all[m_e]
+        r = y.mean()
+        unc = r * (1 - r)
+        base = 100000.0 * (1 - ((p - y) ** 2).mean() / unc)
+        adj = np.clip(iso.predict(p), 0, 1)
+        got = 100000.0 * (1 - ((adj - y) ** 2).mean() / unc)
+        cap = next((r_[6] for r_ in rows if r_[0] == Y), float("nan"))
+        print(f"{Y:>6}{src:>9}{base:10.2f}{got:10.2f}{got-base:+9.2f}"
+              f"{cap:10.2f}")
+    print("  파라미터가 20개 넘는 보정이라 중심 이동(1개)보다 이식이 어렵다.\n"
+          "  이 열이 음수면 모양 보정은 시즌을 못 넘는다는 뜻이다.")
+
     # ---- 축소계수 보험 ----
     # 2023 은 과대확신(재보정이 1830 을 되찾는다), 2024 는 과소확신(alpha* 1.128).
     # **폴드마다 부호가 반대다.** 3폴드만 보면 전부 "벌리자"가 되는데 2023 을

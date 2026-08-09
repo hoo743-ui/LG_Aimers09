@@ -100,10 +100,46 @@ def add_derived(df):
 
 DERIVED = ["same_hand"]
 
+
+def to_cb(X):
+    """CatBoost 입력 — 범주형 컬럼을 문자열로. script.py 가 같은 변환을 한다."""
+    X = X.copy()
+    for c in CB_STR_COLS:
+        X[c] = X[c].astype(str)
+    return X
+
 # 계열 혼합 (4-8) 과 중심 보정 (4-9) 의 기본값. 둘 다 3폴드에서 부호가 일치하고
 # 서로 거의 독립이다 (겹침 -0.1 ~ -3.4). 2024 폴드 기준 각각 +9.34 / +7.81,
 # 합쳐서 +16.03.
 BLEND_LR_W = 0.10
+# CatBoost 혼합 (4-14). 단독으로 HGB 를 폴드마다 +37~95 이긴다.
+# **ID 를 범주형으로 선언하지 않는 것이 핵심이다** — 선언하면 535, 안 하면 698.
+BLEND_CB_W = 0.60
+CB_SEEDS = 2
+# CatBoost 가 문자열 범주형으로 받는 컬럼. 저차원만 넣는다. 고차원 ID 를 넣으면
+# ordered target statistics 가 켜지면서 성능이 무너진다 (4-14).
+CB_STR_COLS = ["top_bottom", "game_type", "base_state",
+               "pitcher_hand", "batter_hand"]
+
+
+def make_catboost(seed=42):
+    """혼합용 CatBoost (4-14).
+
+    대칭 트리(oblivious tree)라 깊이 6(잎 64)이어도 자유 성장 트리와 표현력이
+    전혀 다르다 — 한 깊이의 모든 노드가 같은 분할을 공유하는 구조적 제약이
+    정규화로 작동한다. 4-1 이 규정한 "표현력이 아니라 과신하지 않기" 문제에
+    잎을 조이는 것과는 **다른 경로로** 답한 셈이다. 실제로 예측 표준편차가
+    HGB 보다 좁고 중심 편차도 작다.
+
+    sklearn Pipeline 에 넣지 않는다 — cat_features 를 이름으로 넘겨야 하고
+    ColumnTransformer 는 컬럼 이름을 잃기 때문이다. 대신 문자열 변환 목록을
+    번들에 담아 script.py 가 같은 변환을 하게 한다 (순수 리스트, 6-3 준수).
+    """
+    from catboost import CatBoostClassifier
+    return CatBoostClassifier(
+        iterations=1100, depth=6, learning_rate=0.02, l2_leaf_reg=10.0,
+        loss_function="Logloss", random_seed=seed, verbose=0,
+        allow_writing_files=False)
 # 🚫 RF 혼합은 실전에서 해로웠다. 켜지 말 것.
 #    8회차로 hgb .75 / rf .20 / lr .05 를 제출했다. 2024 홀드아웃은 +4.54 였는데
 #    LB 는 834.58 -> 825.13 으로 **-9.45** 였다 (전달률 -2.08).
@@ -190,7 +226,9 @@ def parse_args():
     p.add_argument("--blend-lr", type=float, default=BLEND_LR_W,
                    help="로지스틱 혼합 비중 (4-8). 0 이면 끈다")
     p.add_argument("--blend-rf", type=float, default=BLEND_RF_W,
-                   help="RandomForest 혼합 비중 (4-8). 0 이면 끈다")
+                   help="RandomForest 혼합 비중 (4-8). 🚫 실전에서 해로웠다")
+    p.add_argument("--blend-cb", type=float, default=BLEND_CB_W,
+                   help="CatBoost 혼합 비중 (4-14). 시드 CB_SEEDS 개를 평균낸다")
     p.add_argument("--center-lam", type=float, default=CENTER_LAM,
                    help="중심 보정 계수 (4-9). p' = p + lam*(그 행의 prev1 - c). "
                         "lam 과 c 는 학습 시점 상수이고 anchor 는 그 행 자신의 "
@@ -370,7 +408,7 @@ def main():
     # ---- 계열 혼합 (4-8) 과 중심 보정 (4-9) ----
     # 저장 경로와 **같은 순서**로 적용해 홀드아웃 수치를 낸다. 여기서 재지 않으면
     # 실제 추론이 무엇을 내는지 모른 채 제출하게 된다.
-    w_h = 1.0 - args.blend_lr - args.blend_rf
+    w_h = 1.0 - args.blend_lr - args.blend_rf - args.blend_cb
     p_mix = w_h * p_ens
     for label, w, maker in (("로지스틱", args.blend_lr, make_linear),
                             ("RF", args.blend_rf, make_forest)):
@@ -383,6 +421,22 @@ def main():
         p_mix = p_mix + w * p_o
         print(f"\n  혼합용 {label} 단독 {score_of(y_va, p_o, base):8.2f} "
               f"(비중 {w}) [{time.time()-t:.0f}s]")
+
+    if args.blend_cb > 0:
+        cb_tr, cb_va = to_cb(X_tr), to_cb(X_va)
+        acc_cb = np.zeros(len(X_va))
+        for s in range(42, 42 + CB_SEEDS):
+            t = time.time()
+            cb = make_catboost(s)
+            cb.fit(cb_tr, y_tr, cat_features=CB_STR_COLS)
+            p_c = cb.predict_proba(cb_va)[:, 1]
+            acc_cb += p_c
+            print(f"\n  혼합용 CatBoost s{s} 단독 "
+                  f"{score_of(y_va, p_c, base):8.2f} [{time.time()-t:.0f}s]")
+        p_c = acc_cb / CB_SEEDS
+        print(f"  CatBoost {CB_SEEDS}시드 평균 {score_of(y_va, p_c, base):8.2f} "
+              f"(비중 {args.blend_cb})")
+        p_mix = p_mix + args.blend_cb * p_c
     s_mix = score_of(y_va, p_mix, base)
 
     p_fin = p_mix
@@ -439,6 +493,31 @@ def main():
     save_bundle(args, members, train, features, alpha_out)
 
 
+MODEL_CACHE = "./.modelcache"
+
+
+def cached_fit(name, build, fit):
+    """학습한 모델을 디스크에 캐시한다.
+
+    전체 재학습이 25분인데 백그라운드가 15~20분에서 잘리는 일이 반복돼,
+    다시 돌릴 때 이미 끝난 것을 재학습하지 않도록 한다.
+
+    **캐시 키는 이름뿐이다.** 피처 구성이나 하이퍼파라미터를 바꿨으면
+    `.modelcache` 를 지우고 다시 돌릴 것 — 안 그러면 옛 모델이 섞인다.
+    """
+    os.makedirs(MODEL_CACHE, exist_ok=True)
+    path = os.path.join(MODEL_CACHE, f"{name}.pkl")
+    if os.path.exists(path):
+        print(f"  {name} 캐시 사용")
+        return joblib.load(path)
+    t = time.time()
+    m = build()
+    fit(m)
+    joblib.dump(m, path, compress=3)
+    print(f"  {name} 완료 [{time.time()-t:.0f}s]")
+    return m
+
+
 def save_bundle(args, members, train, features, alpha_out):
     """전체 데이터로 재학습해 pkl 로 저장한다.
 
@@ -450,11 +529,12 @@ def save_bundle(args, members, train, features, alpha_out):
     models = []
     for label, leaves, min_leaf, n_iter, seed in members:
         n_iter_full = int(n_iter * 1.1)
-        m = make_pipeline(args, features, leaves, min_leaf, n_iter_full, seed)
-        t = time.time()
-        m.fit(train[features], train[TARGET])
+        m = cached_fit(
+            f"hgb_{label}_L{leaves}_it{n_iter_full}",
+            lambda: make_pipeline(args, features, leaves, min_leaf,
+                                  n_iter_full, seed),
+            lambda mm: mm.fit(train[features], train[TARGET]))
         models.append(strip_rng(m))
-        print(f"  {label} (n_iter={n_iter_full}) 완료 [{time.time()-t:.0f}s]")
 
     # ---- 혼합용 모델들 ----
     # script.py 는 dict 하나(구형)와 리스트(신형)를 모두 읽는다.
@@ -463,11 +543,23 @@ def save_bundle(args, members, train, features, alpha_out):
                             ("RF", args.blend_rf, make_forest)):
         if w <= 0:
             continue
-        t = time.time()
-        mdl = maker(features)
-        mdl.fit(train[features], train[TARGET])
+        mdl = cached_fit(f"blend_{label}",
+                         lambda mk=maker: mk(features),
+                         lambda mm: mm.fit(train[features], train[TARGET]))
         blend.append({"model": mdl, "weight": float(w), "kind": label})
-        print(f"  혼합 {label} (비중 {w}) 완료 [{time.time()-t:.0f}s]")
+
+    if args.blend_cb > 0:
+        # 시드마다 별도 항목으로 넣는다 — script.py 의 합산 로직이 그대로 쓰인다
+        Xcb = to_cb(train[features])
+        for s in range(42, 42 + CB_SEEDS):
+            cb = cached_fit(
+                f"catboost_s{s}",
+                lambda sd=s: make_catboost(sd),
+                lambda mm: mm.fit(Xcb, train[TARGET],
+                                  cat_features=CB_STR_COLS))
+            blend.append({"model": cb, "weight": float(args.blend_cb) / CB_SEEDS,
+                          "kind": f"CatBoost-s{s}",
+                          "str_cols": list(CB_STR_COLS)})
     blend = blend or None
 
     center_val = float(train[TARGET].mean())
