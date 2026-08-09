@@ -1,7 +1,8 @@
-# script.py
+﻿# script.py
 import os
 
 import joblib
+import numpy as np
 import pandas as pd
 
 ID_COL = "row_id"
@@ -114,19 +115,24 @@ def predict_proba(bundle, X):
     if not isinstance(bundle, dict):
         return bundle.predict_proba(X)[:, 1]
 
+    # 주력 앙상블. 비어 있을 수 있다 — 혼합 비중 합이 1.0 이면 주력이 없는
+    # 구성이다 (CatBoost 단독). 그때는 아래 혼합이 전부를 만든다.
     models = bundle["models"]
-    acc = None
-    for m in models:
-        p = m.predict_proba(X)[:, 1]
-        acc = p if acc is None else acc + p
-    preds = acc / len(models)
+    if models:
+        acc = None
+        for m in models:
+            p = m.predict_proba(X)[:, 1]
+            acc = p if acc is None else acc + p
+        preds = acc / len(models)
+    else:
+        preds = np.zeros(len(X), dtype=float)
 
     # 혼합 — dict 하나(구형) 또는 리스트(신형). 주력 비중은 1 - 나머지 합이다.
     blend = bundle.get("blend")
     if blend:
         parts = [blend] if isinstance(blend, dict) else list(blend)
         w_rest = sum(float(b["weight"]) for b in parts)
-        if not 0.0 <= w_rest < 1.0:
+        if not 0.0 <= w_rest <= 1.0 + 1e-9:
             raise ValueError(f"혼합 비중 합이 범위를 벗어남: {w_rest}")
         acc2 = (1.0 - w_rest) * preds
         for b in parts:

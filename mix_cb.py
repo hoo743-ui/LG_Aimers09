@@ -31,8 +31,12 @@ CACHE = "./.blendcache"
 TARGET = "control_success"
 PREV1 = "asof_pitcher_prev1_game_success_rate"
 FOLDS = [2021, 2022, 2024]
-CB_TAG = "cb_d6_l210_it1100_noid_seed42"
-CUR_W_LR, CUR_LAM = 0.10, 0.03          # 현재 확정 구성
+# depth 7 / 600그루 — cb_tune.py 로 찾은 최적점 (4-15).
+# **1600그루 모델을 600 에서 잘라 쓰지 않는다.** 이론상 같지만 최종 제출본은
+# 600 으로 학습하므로 격자도 같은 것을 써야 한다.
+CB_TAG = "cb_d7_l210_it600_noid_seed42"
+CUR_CB_TAG = "cb_d6_l210_it1100_noid_seed42"   # 현재 제출본 (LB 875.66)
+CUR_W_CB, CUR_W_LR, CUR_LAM = 0.60, 0.10, 0.03
 
 
 def load(Y, name):
@@ -56,18 +60,19 @@ def main():
         fold[Y] = dict(
             y=y, denom=y.mean() * (1 - y.mean()),
             hgb=load(Y, "hgb_seed42"), lr=load(Y, "lr_seed42"),
-            cb=load(Y, CB_TAG),
+            cb=load(Y, CB_TAG), cb_cur=load(Y, CUR_CB_TAG),
             anc=df.loc[m, PREV1].fillna(c).to_numpy(dtype=float) - c)
 
-    def sc(Y, w_cb, w_lr, lam):
+    def sc(Y, w_cb, w_lr, lam, key="cb"):
         d = fold[Y]
-        p = ((1 - w_cb - w_lr) * d["hgb"] + w_cb * d["cb"] + w_lr * d["lr"])
+        p = ((1 - w_cb - w_lr) * d["hgb"] + w_cb * d[key] + w_lr * d["lr"])
         p = np.clip(p + lam * d["anc"], 0, 1)
         return max(0.0, 100000 * (1 - ((p - d["y"]) ** 2).mean() / d["denom"]))
 
-    ref = {Y: sc(Y, 0.0, CUR_W_LR, CUR_LAM) for Y in FOLDS}
-    print(f"기준 = 현재 확정 구성 (hgb .90 / lr {CUR_W_LR} / lam {CUR_LAM}) "
-          f"— LB 834.58")
+    # 기준은 **현재 제출본**이다 (d6/1100, cb 0.60) — LB 875.66
+    ref = {Y: sc(Y, CUR_W_CB, CUR_W_LR, CUR_LAM, key="cb_cur") for Y in FOLDS}
+    print(f"기준 = 현재 제출본 (hgb .30 / cb {CUR_W_CB} d6·1100 / "
+          f"lr {CUR_W_LR} / lam {CUR_LAM}) — LB 875.66")
     print("  " + "  ".join(f"{Y} {ref[Y]:.2f}" for Y in FOLDS)
           + f"   평균 {np.mean(list(ref.values())):.2f}")
     print(f"\n참고: 폴드별 단독")

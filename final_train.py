@@ -1,4 +1,4 @@
-r"""최종 모델 학습 — 시드 앙상블 + 과신 교정(shrinkage).
+﻿r"""최종 모델 학습 — 시드 앙상블 + 과신 교정(shrinkage).
 
 배경: 이 문제는 신호가 희박해서(BSS ~0.006) 모델이 조금만 확신해도 Brier 가
 손해를 본다. 두 가지로 대응한다.
@@ -136,6 +136,11 @@ def make_catboost(seed=42):
     번들에 담아 script.py 가 같은 변환을 하게 한다 (순수 리스트, 6-3 준수).
     """
     from catboost import CatBoostClassifier
+    # 🚫 d7 / l2 300 / 600그루로 올렸다가 10회차에서 LB -26.89 였다 (4-15).
+    #    iso_cb.py 로 축을 분리해 보니 로컬은 죄가 없었다 — 앙상블을 9회차로
+    #    고정한 채 CatBoost 만 바꿔도 2021·2022·2024 가 전부 양수(평균 +21.21)
+    #    였다. 내삽 폴드 셋이 만장일치인데 외삽 시즌에서 뒤집힌 것이라,
+    #    "폴드를 더 보면 걸러진다"는 방어가 통하지 않는 종류의 실패다.
     return CatBoostClassifier(
         iterations=1100, depth=6, learning_rate=0.02, l2_leaf_reg=10.0,
         loss_function="Logloss", random_seed=seed, verbose=0,
@@ -526,15 +531,22 @@ def save_bundle(args, members, train, features, alpha_out):
     """
     # 학습량이 늘었으니 반복수에 10% 여유를 준다.
     print(f"\n전체 데이터 재학습 (반복수 +10%) ...")
+    # 주력(HGB) 비중이 0 이면 아예 만들지 않는다. 4-15 에서 순수 CatBoost 가
+    # 최적으로 확정돼 HGB 앙상블과 로지스틱이 전부 빠졌다 — pkl 이 작아지고
+    # 추론도 빨라진다. script.py 는 빈 models 를 허용한다.
+    w_h = 1.0 - args.blend_lr - args.blend_rf - args.blend_cb
     models = []
-    for label, leaves, min_leaf, n_iter, seed in members:
-        n_iter_full = int(n_iter * 1.1)
-        m = cached_fit(
-            f"hgb_{label}_L{leaves}_it{n_iter_full}",
-            lambda: make_pipeline(args, features, leaves, min_leaf,
-                                  n_iter_full, seed),
-            lambda mm: mm.fit(train[features], train[TARGET]))
-        models.append(strip_rng(m))
+    if w_h > 1e-9:
+        for label, leaves, min_leaf, n_iter, seed in members:
+            n_iter_full = int(n_iter * 1.1)
+            m = cached_fit(
+                f"hgb_{label}_L{leaves}_it{n_iter_full}",
+                lambda: make_pipeline(args, features, leaves, min_leaf,
+                                      n_iter_full, seed),
+                lambda mm: mm.fit(train[features], train[TARGET]))
+            models.append(strip_rng(m))
+    else:
+        print(f"  주력 비중 {w_h:.2f} — HGB 앙상블 건너뜀 (혼합이 전부를 만든다)")
 
     # ---- 혼합용 모델들 ----
     # script.py 는 dict 하나(구형)와 리스트(신형)를 모두 읽는다.
