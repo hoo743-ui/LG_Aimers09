@@ -21,6 +21,7 @@ submit.zip
 # 루트의 .txt 는 전부 무시하고 requirements.txt 만 예외로 둔다.
 /*.txt
 !/requirements.txt
+!/requirements_cat.txt
 *.log
 
 # 파이썬
