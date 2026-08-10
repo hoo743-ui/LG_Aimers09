@@ -1,0 +1,10 @@
+{
+ "exp": "exp007",
+ "folds": [2023],
+ "seeds": [42, 43, 44],
+ "hparams": {"n_iter": 1100, "lr": 0.02, "leaves": 10, "min_leaf": 1000, "l2": 1.0},
+ "variants": [
+   {"tag": "base",        "features": {"base": "prod"}},
+   {"tag": "no_batter_n", "features": {"base": "prod", "drop": ["asof_batter_n"]}}
+ ]
+}

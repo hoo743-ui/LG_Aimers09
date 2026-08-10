@@ -207,14 +207,6 @@ def parse_args():
     p.add_argument("--no-ctx", action="store_true",
                    help="상황 조건부 Trackman 피처를 끈다. 기본은 켬 — 2폴드 "
                         "x 6시드에서 +29.31 (표준오차 4.08) 로 채택됐다 (4-9).")
-    p.add_argument("--drop-feats", default=None,
-                   help="쉼표로 구분한 피처 이름을 학습에서 뺀다. 추론은 pkl 의 "
-                        "features 목록을 따르므로 script.py 는 손댈 필요가 없다. "
-                        "실험 후보를 만들 때만 쓴다 — 기본값은 확정 설정 그대로다.")
-    p.add_argument("--model-out", default=MODEL_PATH,
-                   help="pkl 저장 경로. 기본은 model/rf.pkl 이다. 후보 모델을 "
-                        "만들 때 반드시 다른 경로를 줄 것 — 베이스라인 pkl 을 "
-                        "덮어쓰면 되돌릴 수 없다.")
     p.add_argument("--save", action="store_true")
     return p.parse_args()
 
@@ -330,14 +322,6 @@ def main():
                     "hand_map": {str(k): v for k, v in HAND.items()},
                     "count_key": COUNT_KEY, "hand_key": HAND_KEY}
         print(f"추론용 표: 카운트 {len(c_all):,}셀, 좌우 {len(h_all):,}셀")
-
-    if args.drop_feats:
-        gone = [c.strip() for c in args.drop_feats.split(",") if c.strip()]
-        unknown = [c for c in gone if c not in features]
-        if unknown:
-            raise SystemExit(f"모르는 피처: {unknown}")
-        features = [c for c in features if c not in gone]
-        print(f"추가 제거: {gone} -> 피처 {len(features)}개")
 
     if args.detrend:
         # 시즌별 리그 평균 차감. 평가셋은 한 시즌이므로 추론에서 평가셋 전체
@@ -460,11 +444,10 @@ def main():
         "ctx": ctx_pack,
         "note":"predict: mean(predict_proba[:,1]) -> center + alpha*(p-center) -> clip(0,1)",
     }
-    out_path = args.model_out
-    os.makedirs(os.path.dirname(out_path), exist_ok=True)
-    joblib.dump(bundle, out_path, compress=3)
-    print(f"\n저장 완료: {out_path} "
-          f"({os.path.getsize(out_path)/1e6:.1f} MB, 모델 {len(models)}개)")
+    os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
+    joblib.dump(bundle, MODEL_PATH, compress=3)
+    print(f"\n저장 완료: {MODEL_PATH} "
+          f"({os.path.getsize(MODEL_PATH)/1e6:.1f} MB, 모델 {len(models)}개)")
 
 
 if __name__ == "__main__":

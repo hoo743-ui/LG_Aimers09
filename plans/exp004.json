@@ -1,0 +1,12 @@
+{
+ "exp": "exp004",
+ "folds": [2021, 2022, 2024],
+ "seeds": [42, 43, 44],
+ "hparams": {"n_iter": 1100, "lr": 0.02, "leaves": 10, "min_leaf": 1000, "l2": 1.0},
+ "variants": [
+   {"tag": "base",     "features": {"base": "prod"}},
+   {"tag": "tmx_c",    "features": {"base": "prod", "add": ["tmc_spin_dev", "tmc_hb_dev", "tmc_ivb_dev"]}},
+   {"tag": "tmx_h",    "features": {"base": "prod", "add": ["tmh_spin_dev", "tmh_hb_dev", "tmh_ivb_dev"]}},
+   {"tag": "tmx_both", "features": {"base": "prod", "add": ["tmc_spin_dev", "tmc_hb_dev", "tmc_ivb_dev", "tmh_spin_dev", "tmh_hb_dev", "tmh_ivb_dev"]}}
+ ]
+}

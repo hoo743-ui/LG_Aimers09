@@ -27,7 +27,7 @@ import zipfile
 
 import pandas as pd
 
-ZIP = "submit.zip"
+ZIP = os.environ.get("VERIFY_ZIP", "submit.zip")   # 후보 검증용 (기본은 제출본)
 DATA_DIR = "./data"
 TARGET = "control_success"
 ID = "row_id"

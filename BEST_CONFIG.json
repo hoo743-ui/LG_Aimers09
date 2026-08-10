@@ -1,0 +1,129 @@
+{
+  "_note": "규칙 준수 기준 현재 베이스라인. 실험이 이걸 이기기 전에는 절대 바꾸지 않는다.",
+  "updated": "2026-08-10",
+  "best_model": "baseline/rf_r7_LB825.48.pkl",
+  "best_submission": "baseline/submit_r7_LB825.48.zip",
+  "live_copies": {
+    "model": "model/rf.pkl",
+    "submit": "submit.zip",
+    "_note": "위 baseline/ 사본과 동일. 새 실험은 이 둘을 덮어쓰지 않고 submissions/ 에 따로 만든다."
+  },
+  "provenance": "7회차 제출 (2026-08-06)",
+  "lb": 825.48,
+  "lb_reported_best": 875.66,
+  "lb_reported_best_note": "사용자가 8회차 신규(규칙 준수) 결과라고 확인. 로컬에 대응 아티팩트가 없어 설정 미상 — LB_LEDGER.csv 참고. 825.48 아티팩트가 유일하게 재현 가능한 규칙 준수 최고본이라 이걸 baseline 으로 둔다.",
+  "local_2024_holdout": 667.48,
+  "train_command": ".\\venv_submit\\Scripts\\python.exe final_train.py --leaves 10 --min-leaf 1000 --n-iter 1100 --keep-ids --seeds 5 --save",
+  "model": "HistGradientBoostingClassifier",
+  "hparams": {
+    "max_iter": 1100,
+    "max_iter_full_refit": 1210,
+    "learning_rate": 0.02,
+    "max_leaf_nodes": 10,
+    "min_samples_leaf": 1000,
+    "l2_regularization": 1.0,
+    "early_stopping": false,
+    "random_state": [
+      42,
+      43,
+      44,
+      45,
+      46
+    ]
+  },
+  "ensemble": "시드 5개 단순 평균 (균등 가중). 다양성 앙상블은 쓰지 않는다 (4-5).",
+  "features": {
+    "count": 55,
+    "composition": "test.csv 기본 47 + 상황 조건부 Trackman 편차 8",
+    "ids": "pitcher_id / batter_id / team_id 모두 포함 (4-5)",
+    "excluded": [
+      "tmc_n",
+      "tmh_n"
+    ],
+    "excluded_reason": "시계 컬럼. 6회차에서 LB -29 (4-9)"
+  },
+  "postprocess": {
+    "alpha": 1.0,
+    "shift": null,
+    "detrend": null,
+    "_note": "국면 보정은 규칙 위반이라 제거됨 (4-3)"
+  },
+  "env": {
+    "train_venv": "venv_submit",
+    "pins": "scikit-learn==1.7.2 joblib==1.5.3 pandas==2.3.3 numpy==2.2.6"
+  },
+  "candidates": [
+    {
+      "path": "submissions/exp_003_catboost_tuned.zip",
+      "rank": 1,
+      "model": "CatBoost",
+      "hparams": {
+        "depth": 6,
+        "learning_rate": 0.02,
+        "l2_leaf_reg": 100.0,
+        "border_count": 32,
+        "iterations": 1200,
+        "iterations_full_refit": 1320,
+        "seeds": [
+          42,
+          43,
+          44
+        ]
+      },
+      "local_2024": 748.77,
+      "delta_vs_baseline": 81.29,
+      "evidence": "CatBoost +64.84 (vs HGB) 위에 규제 튜닝 +28.27 (SE 2.95). 둘 다 3/3 폴드 6/6 시드 양수",
+      "lb_estimate_conservative": "약 866 (로컬 델타 x 0.5, README ④)",
+      "risk": "requirements.txt 에 catboost==1.2.10 추가 필요",
+      "verify": "verify_submit.py 1-4 통과, 추론 3.2초",
+      "seeds_note": "3 시드. 5 로 올리면 +1.5 추가 예상 (4-14)"
+    },
+    {
+      "path": "submissions/exp_001_no_batter_n.zip",
+      "rank": 2,
+      "model": "HGB",
+      "local_2024": 699.73,
+      "delta_vs_baseline": 32.25,
+      "evidence": "fold2024 +30.5 (6/6 시드) 이지만 2021/2022 는 작은 음수",
+      "risk": "단일 폴드 효과, 기전 미확인",
+      "verify": "1-4 통과"
+    }
+  ],
+  "closed_axes": [
+    "시드 앙상블 5->10 (+0.25 포화)",
+    "캘리브레이션 기울기 (워크포워드 1/2승)",
+    "season 제거 (2024 -456)",
+    "상황별 성공률 편차 (신호/잡음 <1, 학습 없이 기각)",
+    "Trackman 물리량 상황 편차 (2024 음수)",
+    "LightGBM (상관 0.994, 이득 +0.5)",
+    "HGB+CatBoost 앙상블 (3폴드 모두 순수 cat 이 최고)",
+    "CatBoost min_data_in_leaf (SymmetricTree 에서 무시됨 — 델타 정확히 0)",
+    "CatBoost depth 7 이상 (-18.25 유의 음수)",
+    "CatBoost border_count 8 이하 (+16.07 로 되돌아감)",
+    "CatBoost l2 100 이상 (300 과 동일 — 포화)",
+    "n_iter 튜닝 (워크포워드 -10.60, 규제 후 곡선 평평)",
+    "범주형 one-hot (팀/주자상황 — 부호갈림, EXP012)",
+    "CatBoost grow_policy Depthwise/Lossguide (-77 / -70 유의 음수, EXP013)",
+    "CatBoost rsm 0.8 / subsample 0.8 (부호갈림, EXP013)",
+    "asof_batter_n 제거 (CatBoost 에서 +0.9 로 소멸 — HGB 고유 결함이었다, EXP012)",
+    "시드 앙상블 3 이상 (3->5 가 +1.5, 포화, EXP015)"
+  ],
+  "catboost_notes": {
+    "thread_count": "결과에 영향을 준다. fold2024 seed42 에서 6스레드 717.97 vs 11스레드 712.29. 실험 비교 시 반드시 고정할 것 (runner 는 hparams.threads 로 키에 박는다)",
+    "border_count": "기본 254 는 나쁘다. 최적은 16~32. 이 문제의 '과신하지 않기' 성질(4-1)과 같은 방향",
+    "seed_noise": "HGB 의 1/10 이하. fold2024 두 시드 차이 0.08"
+  },
+  "open_axes": [
+    {
+      "axis": "lr 0.01 x n_iter 2400",
+      "status": "미완 (18칸 중 10칸)",
+      "partial": "3폴드 모두 양수 +7.89/+4.24/+6.05",
+      "cmd": "exp/runner.py --plan plans/exp014.json"
+    },
+    {
+      "axis": "제출본 시드 3 -> 5",
+      "status": "미실행",
+      "expected": "약 +1.5, 위험 없음"
+    }
+  ]
+}

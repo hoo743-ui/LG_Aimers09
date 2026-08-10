@@ -1,0 +1,10 @@
+{
+ "exp": "val000",
+ "folds": [2024],
+ "seeds": [42],
+ "hparams": {"n_iter": 1400, "lr": 0.02, "leaves": 10, "min_leaf": 1000, "l2": 1.0},
+ "variants": [
+   {"tag": "base", "features": {"base": "raw47"}},
+   {"tag": "dev",  "features": {"base": "prod"}}
+ ]
+}

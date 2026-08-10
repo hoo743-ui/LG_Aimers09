@@ -1,0 +1,63 @@
+{
+ "exp": "exp014",
+ "folds": [
+  2021,
+  2022,
+  2024
+ ],
+ "seeds": [
+  42,
+  43
+ ],
+ "hparams": {},
+ "variants": [
+  {
+   "tag": "cat_tuned",
+   "model": "cat",
+   "features": {
+    "base": "prod"
+   },
+   "hparams": {
+    "n_iter": 1200,
+    "lr": 0.02,
+    "depth": 6,
+    "min_leaf": 1000,
+    "l2": 100.0,
+    "max_bins": 32,
+    "threads": 11
+   }
+  },
+  {
+   "tag": "lr01_i2400",
+   "model": "cat",
+   "features": {
+    "base": "prod"
+   },
+   "hparams": {
+    "n_iter": 2400,
+    "lr": 0.01,
+    "depth": 6,
+    "min_leaf": 1000,
+    "l2": 100.0,
+    "max_bins": 32,
+    "threads": 11
+   }
+  },
+  {
+   "tag": "lr04_i600",
+   "model": "cat",
+   "features": {
+    "base": "prod"
+   },
+   "hparams": {
+    "n_iter": 600,
+    "lr": 0.04,
+    "depth": 6,
+    "min_leaf": 1000,
+    "l2": 100.0,
+    "max_bins": 32,
+    "threads": 11
+   }
+  }
+ ]
+}

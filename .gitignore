@@ -30,3 +30,9 @@ __pycache__/
 
 # Jupyter 임시 노트북
 Untitled*.ipynb
+
+# 실험 캐시 — 피처 행렬(npy)과 검증 예측(npz). 재생성 가능하고 용량이 크다.
+exp/cache/
+exp/preds/
+exp/*.log
+model_cand/

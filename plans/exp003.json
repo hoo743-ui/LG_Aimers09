@@ -1,0 +1,12 @@
+{
+ "exp": "exp003",
+ "folds": [2021, 2022, 2024],
+ "seeds": [42, 43, 44],
+ "hparams": {"leaves": 10, "min_leaf": 1000, "l2": 1.0},
+ "variants": [
+   {"tag": "base",        "hparams": {"lr": 0.02, "n_iter": 1100}},
+   {"tag": "lr01_i2200",  "hparams": {"lr": 0.01, "n_iter": 2200}},
+   {"tag": "lr04_i550",   "hparams": {"lr": 0.04, "n_iter": 550}},
+   {"tag": "l2_10",       "hparams": {"lr": 0.02, "n_iter": 1100, "l2": 10.0}}
+ ]
+}

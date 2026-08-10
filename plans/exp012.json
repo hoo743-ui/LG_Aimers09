@@ -1,0 +1,171 @@
+{
+ "exp": "exp012",
+ "folds": [
+  2021,
+  2022,
+  2024
+ ],
+ "seeds": [
+  42,
+  43
+ ],
+ "hparams": {},
+ "variants": [
+  {
+   "tag": "cat_tuned",
+   "model": "cat",
+   "features": {
+    "base": "prod"
+   },
+   "hparams": {
+    "n_iter": 1200,
+    "lr": 0.02,
+    "depth": 6,
+    "min_leaf": 1000,
+    "l2": 100.0,
+    "max_bins": 32,
+    "threads": 11
+   }
+  },
+  {
+   "tag": "oh_team",
+   "model": "cat",
+   "features": {
+    "base": "prod",
+    "add": [
+     "oh_pitcher_team_id_12",
+     "oh_pitcher_team_id_13",
+     "oh_pitcher_team_id_14",
+     "oh_pitcher_team_id_15",
+     "oh_pitcher_team_id_16",
+     "oh_pitcher_team_id_17",
+     "oh_pitcher_team_id_18",
+     "oh_pitcher_team_id_19",
+     "oh_pitcher_team_id_20",
+     "oh_pitcher_team_id_21",
+     "oh_pitcher_team_id_22",
+     "oh_pitcher_team_id_23",
+     "oh_pitcher_team_id_25",
+     "oh_batter_team_id_12",
+     "oh_batter_team_id_13",
+     "oh_batter_team_id_14",
+     "oh_batter_team_id_15",
+     "oh_batter_team_id_16",
+     "oh_batter_team_id_17",
+     "oh_batter_team_id_18",
+     "oh_batter_team_id_19",
+     "oh_batter_team_id_20",
+     "oh_batter_team_id_21",
+     "oh_batter_team_id_22",
+     "oh_batter_team_id_23",
+     "oh_batter_team_id_25"
+    ],
+    "drop": [
+     "pitcher_team_id",
+     "batter_team_id"
+    ]
+   },
+   "hparams": {
+    "n_iter": 1200,
+    "lr": 0.02,
+    "depth": 6,
+    "min_leaf": 1000,
+    "l2": 100.0,
+    "max_bins": 32,
+    "threads": 11
+   }
+  },
+  {
+   "tag": "oh_team_keep",
+   "model": "cat",
+   "features": {
+    "base": "prod",
+    "add": [
+     "oh_pitcher_team_id_12",
+     "oh_pitcher_team_id_13",
+     "oh_pitcher_team_id_14",
+     "oh_pitcher_team_id_15",
+     "oh_pitcher_team_id_16",
+     "oh_pitcher_team_id_17",
+     "oh_pitcher_team_id_18",
+     "oh_pitcher_team_id_19",
+     "oh_pitcher_team_id_20",
+     "oh_pitcher_team_id_21",
+     "oh_pitcher_team_id_22",
+     "oh_pitcher_team_id_23",
+     "oh_pitcher_team_id_25",
+     "oh_batter_team_id_12",
+     "oh_batter_team_id_13",
+     "oh_batter_team_id_14",
+     "oh_batter_team_id_15",
+     "oh_batter_team_id_16",
+     "oh_batter_team_id_17",
+     "oh_batter_team_id_18",
+     "oh_batter_team_id_19",
+     "oh_batter_team_id_20",
+     "oh_batter_team_id_21",
+     "oh_batter_team_id_22",
+     "oh_batter_team_id_23",
+     "oh_batter_team_id_25"
+    ]
+   },
+   "hparams": {
+    "n_iter": 1200,
+    "lr": 0.02,
+    "depth": 6,
+    "min_leaf": 1000,
+    "l2": 100.0,
+    "max_bins": 32,
+    "threads": 11
+   }
+  },
+  {
+   "tag": "oh_base",
+   "model": "cat",
+   "features": {
+    "base": "prod",
+    "add": [
+     "oh_base_state_0",
+     "oh_base_state_1",
+     "oh_base_state_2",
+     "oh_base_state_3",
+     "oh_base_state_4",
+     "oh_base_state_5",
+     "oh_base_state_6",
+     "oh_base_state_7"
+    ],
+    "drop": [
+     "base_state"
+    ]
+   },
+   "hparams": {
+    "n_iter": 1200,
+    "lr": 0.02,
+    "depth": 6,
+    "min_leaf": 1000,
+    "l2": 100.0,
+    "max_bins": 32,
+    "threads": 11
+   }
+  },
+  {
+   "tag": "no_batter_n",
+   "model": "cat",
+   "features": {
+    "base": "prod",
+    "drop": [
+     "asof_batter_n"
+    ]
+   },
+   "hparams": {
+    "n_iter": 1200,
+    "lr": 0.02,
+    "depth": 6,
+    "min_leaf": 1000,
+    "l2": 100.0,
+    "max_bins": 32,
+    "threads": 11
+   }
+  }
+ ]
+}

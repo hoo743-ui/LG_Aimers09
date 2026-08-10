@@ -7,7 +7,14 @@ zipfile 로 직접 쓰면서 경로를 슬래시로 정규화한다.
 
 사용법:
     .\.venv\Scripts\python.exe make_submit.py
+    .\.venv\Scripts\python.exe make_submit.py --model model_cand/exp001.pkl `
+        --out submissions/exp_001.zip
+
+--model 을 주면 그 pkl 을 zip 안에서 model/rf.pkl 로 넣는다. 디스크의
+model/ 폴더를 건드리지 않으므로 **베이스라인 제출물이 안전하다.** 후보를
+만들 때는 반드시 이 형태를 쓸 것.
 """
+import argparse
 import os
 import zipfile
 
@@ -32,17 +39,38 @@ def iter_entries(items):
 
 
 def main():
-    with zipfile.ZipFile(OUT, "w", zipfile.ZIP_DEFLATED) as zf:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--model", default=None,
+                    help="이 pkl 을 zip 안에서 model/rf.pkl 로 넣는다. "
+                         "디스크의 model/ 폴더는 건드리지 않는다.")
+    ap.add_argument("--out", default=OUT)
+    ap.add_argument("--requirements", default="requirements.txt",
+                    help="zip 안에 requirements.txt 로 넣을 파일. CatBoost "
+                         "후보는 requirements_cat.txt 를 쓴다 — 저장소의 "
+                         "requirements.txt 를 건드리면 베이스라인 재현이 깨진다.")
+    a = ap.parse_args()
+
+    out = a.out
+    if a.model:
+        # model/ 폴더 대신 지정한 pkl 하나만 model/rf.pkl 로 담는다.
+        entries = [(a.model, "model/rf.pkl"),
+                   ("script.py", "script.py"),
+                   (a.requirements, "requirements.txt")]
+    else:
+        entries = list(iter_entries(ITEMS))
+    os.makedirs(os.path.dirname(out) or ".", exist_ok=True)
+
+    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as zf:
         total = 0
-        for src, arc in iter_entries(ITEMS):
+        for src, arc in entries:
             zf.write(src, arc)
             size = os.path.getsize(src)
             total += size
             print(f"  + {arc}  ({size/1e6:.2f} MB)")
-    print(f"\n✅ {OUT} 생성 ({os.path.getsize(OUT)/1e6:.2f} MB, 원본 {total/1e6:.2f} MB)")
+    print(f"\n✅ {out} 생성 ({os.path.getsize(out)/1e6:.2f} MB, 원본 {total/1e6:.2f} MB)")
 
     # 검증 — 역슬래시가 섞였거나 항목이 빠지면 즉시 알림
-    with zipfile.ZipFile(OUT) as zf:
+    with zipfile.ZipFile(out) as zf:
         names = zf.namelist()
     bad = [n for n in names if "\\" in n]
     if bad:
