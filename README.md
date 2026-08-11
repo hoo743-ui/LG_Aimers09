@@ -1435,6 +1435,21 @@ print 에서 예외가 나 **0 이 아닌 종료코드**로 끝난다. 채점기
 HGB(22.2초)보다 7배 빠르다. `requirements.txt` 는 `requirements_cat.txt`
 (catboost==1.2.10 추가)가 zip 안에 들어간다.
 
+**2026-08-11 exp_003 재검증** (`exp/verify_exp003_0811.log`) — 올리기 직전 상태를
+다시 확인했다. 1·2회차 실패가 전부 이 목록에서 났으므로 제출 전에 매번 돌린다.
+
+```powershell
+$env:VERIFY_ZIP="submissions/exp_003_catboost_tuned.zip"
+.\venv_submit\Scripts\python.exe verify_submit.py
+```
+
+| 단계 | 결과 |
+|---|---|
+| 1 zip 구조 | `model/` 폴더로 풀림, 역슬래시 0, catboost 핀 포함 |
+| 2 격리 실행 | `submission.csv` 생성 |
+| 3 실제 규모 | 253,507행 **2.8초** / 제한 600초 (0.5%), 확률 0.3132~0.6563 |
+| 4 낮은 numpy | pkl 로드 통과 (6-4 재발 방지) |
+
 **2026-08-11 확인 — 후보 구성은 이대로 확정이다.** exp_003 위에 `lr` 0.01 x 2400
 (4-15)과 시드 5 (4-14)를 얹어 봤지만 **둘 다 제출 경로에서 부호가 뒤집혔다**
 (4-17). 지금 올릴 것은 exp_003 **그대로**다.
