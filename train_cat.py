@@ -73,6 +73,11 @@ def parse_args():
     p.add_argument("--dev-feats", action="store_true",
                    help="최근 형태 편차 6개를 추가한다 (EXP019). 실험 경로에서 "
                         "3폴드 +10.39 이지만 부호가 갈렸다 — 제출 경로 확인용.")
+    p.add_argument("--alpha", type=float, default=1.0,
+                   help="예측 퍼짐 배율. script.py 가 p' = center + alpha*"
+                        "(p - center) 를 적용한다. 시드 평균이 퍼짐을 깎으므로 "
+                        "1보다 큰 값이 이득이다 (exp/alpha_pick.py 로 고른다). "
+                        "학습 시점 상수라 규칙 위반이 아니다 (4-3).")
     p.add_argument("--save-val-pred", default=None,
                    help="검증 시즌 예측을 npz 로 저장한다. 캘리브레이션(alpha) "
                         "을 재학습 없이 재기 위한 것 — 제출 경로 예측의 퍼짐은 "
@@ -164,6 +169,16 @@ def main():
     print(f"\n=== 검증 {VAL_SEASON} ===")
     print(f"  앙상블 {ft.score_of(y_va, p_ens, base):8.2f}   "
           f"범위 {p_ens.min():.4f}~{p_ens.max():.4f}")
+
+    if args.alpha != 1.0:
+        # 검증에서도 제출과 같은 변환을 적용해 본다. center 는 제출본과 같은
+        # 규약(학습 구간 성공률)을 쓴다 — 검증 시즌 평균을 쓰면 4-3 위반이다.
+        c_val = float(y_tr.mean())
+        p_cal = np.clip(c_val + args.alpha * (p_ens - c_val), 0.0, 1.0)
+        hit = float(((p_cal <= 0.0) | (p_cal >= 1.0)).mean())
+        print(f"  alpha {args.alpha} 적용 (center={c_val:.4f}) "
+              f"{ft.score_of(y_va, p_cal, base):8.2f}   "
+              f"범위 {p_cal.min():.4f}~{p_cal.max():.4f}  clip 닿은 비율 {hit:.4%}")
     print(f"  중심 편차 {p_ens.mean() - r:+.4f} "
           f"(예측 {p_ens.mean():.4f} vs 실제 {r:.4f})")
 
@@ -193,12 +208,14 @@ def main():
         print(f"  s{seed} (n_iter={a2.n_iter}) 완료 [{time.time()-t:.0f}s]")
 
     bundle = {
-        "models": models, "alpha": 1.0,
+        "models": models, "alpha": float(args.alpha),
+        # center 는 전체 학습 데이터의 성공률이다. 평가셋을 보지 않는다 (4-3).
         "center": float(train[TARGET].mean()),
         "features": list(features),
         "spec": [f"cat-s{s}" for s in range(42, 42 + args.seeds)],
         "shift": None, "detrend": None, "ctx": ctx_pack,
-        "note": "catboost ensemble; predict: mean(proba) -> clip(0,1)",
+        "note": f"catboost ensemble; predict: mean(proba) -> "
+                f"center+{args.alpha}*(p-center) -> clip(0,1)",
     }
     os.makedirs(os.path.dirname(args.model_out), exist_ok=True)
     joblib.dump(bundle, args.model_out, compress=3)
