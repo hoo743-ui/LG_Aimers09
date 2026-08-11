@@ -1,41 +1,41 @@
 {
   "_note": "규칙 준수 기준 현재 베이스라인. 실험이 이걸 이기기 전에는 절대 바꾸지 않는다.",
   "updated": "2026-08-11",
-  "best_model": "baseline/rf_r7_LB825.48.pkl",
-  "best_submission": "baseline/submit_r7_LB825.48.zip",
+  "best_model": "baseline/cat_LB864.92.pkl",
+  "best_submission": "baseline/submit_cat_LB864.92.zip",
+  "best_train_script": "baseline/train_cat_LB864.92.py",
+  "best_requirements": "baseline/requirements_cat_LB864.92.txt",
   "live_copies": {
-    "model": "model/rf.pkl",
-    "submit": "submit.zip",
-    "_note": "위 baseline/ 사본과 동일. 새 실험은 이 둘을 덮어쓰지 않고 submissions/ 에 따로 만든다."
+    "model": "model_cand/cat_b32l2100.pkl",
+    "submit": "submissions/exp_003_catboost_tuned.zip",
+    "_note": "위 baseline/ 사본과 동일한 파일이다. model/rf.pkl 과 submit.zip 은 아직 7회차 HGB 판이다 — script.py 가 두 형식을 모두 읽으므로 급하지 않지만, 다음 빌드 때 정리할 것"
   },
-  "provenance": "7회차 제출 (2026-08-06)",
-  "lb": 825.48,
+  "provenance": "9회차 제출 (2026-08-11)",
+  "lb": 864.92,
+  "lb_prediction_check": "보수 예상 866 (로컬 델타 81.29 x 0.5) -> 실제 864.92, 오차 -1.1. 같은 데이터에서 직선 환산은 931 을 예측해 -66 빗나갔다 — 직선은 폐기했다 (README 1장)",
   "lb_reported_best": 875.66,
-  "lb_reported_best_note": "사용자가 8회차 신규(규칙 준수) 결과라고 확인. 로컬에 대응 아티팩트가 없어 설정 미상 — LB_LEDGER.csv 참고. 825.48 아티팩트가 유일하게 재현 가능한 규칙 준수 최고본이라 이걸 baseline 으로 둔다.",
-  "local_2024_holdout": 667.48,
-  "train_command": ".\\venv_submit\\Scripts\\python.exe final_train.py --leaves 10 --min-leaf 1000 --n-iter 1100 --keep-ids --seeds 5 --save",
-  "model": "HistGradientBoostingClassifier",
+  "lb_reported_best_note": "8회차. 사용자 보고이나 로컬에 대응 아티팩트가 없어 설정 미상 — LB_LEDGER.csv 참고. 재현 가능한 규칙 준수 최고본은 864.92 다",
+  "local_2024_holdout": 748.77,
+  "train_command": ".\\venv_submit\\Scripts\\python.exe train_cat.py --lr 0.02 --n-iter 1200 --l2 100 --border-count 32 --seeds 3 --save --model-out ./model_cand/cat_b32l2100.pkl",
+  "model": "CatBoostClassifier",
   "hparams": {
-    "max_iter": 1100,
-    "max_iter_full_refit": 1210,
+    "iterations": 1200,
+    "iterations_full_refit": 1320,
     "learning_rate": 0.02,
-    "max_leaf_nodes": 10,
-    "min_samples_leaf": 1000,
-    "l2_regularization": 1.0,
-    "early_stopping": false,
-    "random_state": [
-      42,
-      43,
-      44,
-      45,
-      46
-    ]
+    "depth": 6,
+    "l2_leaf_reg": 100.0,
+    "border_count": 32,
+    "min_data_in_leaf": 1000,
+    "min_data_in_leaf_note": "SymmetricTree 에서 조용히 무시된다 (델타 정확히 0). 인자로 남아 있을 뿐이다",
+    "loss_function": "Logloss (기본값). RMSE 는 EXP018 에서 기각",
+    "cat_features": "쓰지 않는다. 범주형은 OrdinalEncoder 로 정수화해 숫자로 넣는다 (EXP017 에서 CTR 기각)",
+    "random_seed": [42, 43, 44]
   },
-  "ensemble": "시드 5개 단순 평균 (균등 가중). 다양성 앙상블은 쓰지 않는다 (4-5).",
+  "ensemble": "시드 3개 단순 평균 (균등 가중). 5 로 늘려도 제출 경로에서 -0.63 (4-14)",
   "features": {
     "count": 55,
     "composition": "test.csv 기본 47 + 상황 조건부 Trackman 편차 8",
-    "ids": "pitcher_id / batter_id / team_id 모두 포함 (4-5)",
+    "ids": "pitcher_id / batter_id / 팀 ID 모두 포함 (4-5). 숫자로 넣는다",
     "excluded": [
       "tmc_n",
       "tmh_n"
@@ -50,48 +50,18 @@
   },
   "env": {
     "train_venv": "venv_submit",
-    "pins": "scikit-learn==1.7.2 joblib==1.5.3 pandas==2.3.3 numpy==2.2.6"
+    "pins": "scikit-learn==1.7.2 joblib==1.5.3 pandas==2.3.3 numpy==2.2.6 catboost==1.2.10",
+    "requirements_in_zip": "requirements_cat.txt (catboost 포함). 저장소의 requirements.txt 는 HGB 재현용으로 남겨 둔다"
   },
-  "candidates": [
-    {
-      "path": "submissions/exp_003_catboost_tuned.zip",
-      "rank": 1,
-      "model": "CatBoost",
-      "hparams": {
-        "depth": 6,
-        "learning_rate": 0.02,
-        "l2_leaf_reg": 100.0,
-        "border_count": 32,
-        "iterations": 1200,
-        "iterations_full_refit": 1320,
-        "seeds": [
-          42,
-          43,
-          44
-        ]
-      },
-      "local_2024": 748.77,
-      "delta_vs_baseline": 81.29,
-      "evidence": "CatBoost +64.84 (vs HGB) 위에 규제 튜닝 +28.27 (SE 2.95). 둘 다 3/3 폴드 6/6 시드 양수",
-      "lb_estimate_conservative": "약 866 (로컬 델타 x 0.5, README ④)",
-      "risk": "requirements.txt 에 catboost==1.2.10 추가 필요",
-      "verify": "verify_submit.py 1-4 통과 (2026-08-11 재검증). 253,507행 추론 2.8초/제한 600초, 확률 0.3132~0.6563, 낮은 numpy 로드 통과",
-      "seeds_note": "3 시드로 확정. 5 로 올려 실제로 빌드해 보니 제출 경로 2024 에서 -0.63 이었다 (748.77 -> 748.14). 3폴드 캐시 곡선의 +1.28 은 경로 편향 안이다 (4-14, 4-17)",
-      "final_2026_08_11": "이 위에 lr 0.01 x 2400 과 시드 5 를 얹어 봤으나 둘 다 제출 경로에서 부호가 뒤집혔다. 후보 구성은 이대로 확정 (4-15, 4-17, 4-20)"
-    },
-    {
-      "path": "submissions/exp_001_no_batter_n.zip",
-      "rank": null,
-      "status": "WITHDRAWN",
-      "model": "HGB",
-      "local_2024": 699.73,
-      "delta_vs_baseline": 32.25,
-      "evidence": "fold2024 +30.5 (6/6 시드) 이지만 2021/2022 는 작은 음수",
-      "risk": "단일 폴드 효과, 기전 미확인",
-      "verify": "1-4 통과",
-      "withdrawn_reason": "EXP012 에서 폐기 — CatBoost 위에서는 효과가 +0.9 로 사라졌다. HGB 고유의 결함이었지 데이터 성질이 아니었다 (4-12)"
-    }
-  ],
+  "verify": "verify_submit.py 1-4 통과 (2026-08-11). 253,507행 추론 2.8초/제한 600초, 확률 0.3132~0.6563, 낮은 numpy 로드 통과",
+  "previous_baseline": {
+    "model": "baseline/rf_r7_LB825.48.pkl",
+    "submission": "baseline/submit_r7_LB825.48.zip",
+    "algo": "HistGradientBoostingClassifier L10 mL1000 lr0.02 i1100 seeds5",
+    "lb": 825.48,
+    "local_2024": 667.48,
+    "note": "7회차. 9회차가 LB +39.44 로 대체했다. 아티팩트는 지우지 않는다"
+  },
   "closed_axes": [
     "시드 앙상블 5->10 (+0.25 포화)",
     "캘리브레이션 기울기 (워크포워드 1/2승)",
@@ -115,12 +85,21 @@
     "lr 0.005 x n_iter 4800 (0.01 대비 +3.04 SE 2.50 부호갈림 미달. 비용 4배, EXP016)",
     "CatBoost cat_features 저카디널리티 (+1.90 SE 3.44 부호갈림 미달, EXP017)",
     "CatBoost cat_features ID (pitcher/batter/팀 CTR — -31.17, 2021 -82.5. asof_* 가 as-of 규율까지 갖춘 우월한 버전이다. 비용 3배, EXP017)",
-    "목적함수 RMSE (CatBoostRegressor — +2.64 SE 2.61 부호갈림 미달. i2400 은 -54.65 로 빨리 과적합, EXP018)"
+    "목적함수 RMSE (CatBoostRegressor — +2.64 SE 2.61 부호갈림 미달. i2400 은 -54.65 로 빨리 과적합, EXP018)",
+    "최근성 가중 / 학습 구간 축소 (regime_test.py — 균등 640.01 대비 가중x1.5 605.93, x2 582.59, 최근3시즌 581.42. 전부 크게 음수)"
   ],
   "catboost_notes": {
     "thread_count": "결과에 영향을 준다. fold2024 seed42 에서 6스레드 717.97 vs 11스레드 712.29. 실험 비교 시 반드시 고정할 것 (runner 는 hparams.threads 로 키에 박는다)",
     "border_count": "기본 254 는 나쁘다. 최적은 16~32. 이 문제의 '과신하지 않기' 성질(4-1)과 같은 방향",
-    "seed_noise": "HGB 의 1/10 이하. fold2024 두 시드 차이 0.08"
+    "seed_noise": "HGB 의 1/10 이하. fold2024 두 시드 차이 0.08",
+    "inference": "253,507행 2.8초. HGB(22.2초)의 1/8"
+  },
+  "lb_conversion": {
+    "_note": "직선 환산은 9회차에서 -66 으로 깨졌다. 델타 비율만 쓴다 (README 1장)",
+    "delta_ratio": 0.49,
+    "measured": {"r4": 0.554, "r7": 0.500, "r9": 0.485},
+    "rule": "LB 델타 = 로컬 델타 x 0.49. LB +10 을 원하면 로컬 +20 이 필요하다",
+    "gap_to_first": "1등 1000+ = 로컬 약 1024. 지금 748.77 이므로 275점 차"
   },
   "measurement_paths": {
     "_note": "가장 중요한 방법론 사실 (README 4-17). 두 경로는 같은 설정에서도 13점 어긋난다. 실험 경로는 방향 탐색용이고, 10점 미만의 이득은 제출 경로에서 다시 재기 전까지 채택하지 않는다.",
@@ -144,14 +123,14 @@
   "open_axes": [
     {
       "axis": "asof_* 축소 (경험 베이즈)",
-      "status": "미실행",
-      "note": "표본이 적은 asof_* 비율을 리그 평균으로 당긴다. 표본 수 컬럼(tmc_n/tmh_n)은 시계라 뺐지만(4-9) 비율 안에 표본 수를 녹이면 시계 컬럼 없이 그 정보를 쓴다. 4-1 의 '과신하지 않기' 와 같은 방향이고, 4-9 에서 성공한 것도 수준값이 아니라 편차였다. shrink 관련 코드가 전무하다"
+      "status": "진행 중 (2026-08-11)",
+      "note": "표본이 적은 asof_* 비율을 리그 평균으로 당긴다. 표본 수 컬럼(tmc_n/tmh_n)은 시계라 뺐지만(4-9) 비율 안에 표본 수를 녹이면 시계 컬럼 없이 그 정보를 쓴다. 4-1 의 '과신하지 않기' 와 같은 방향이고, 4-9 에서 성공한 것도 수준값이 아니라 편차였다"
     },
     {
       "axis": "pitcher_id/batter_id 의 시계 성분 제거",
       "status": "미실행",
-      "note": "ID 를 순위가 아닌 형태로 바꾸면 시계 성분만 뺄 수 있을지 모른다 (README 7장 6번). 4회차에서 ID 가 LB +9.40 으로 실측됐으니 전부가 시계는 아니다"
+      "note": "ID 가 연대순이라 AUC 0.562/0.550 단조다. ID 를 순위가 아닌 형태로 바꾸면 시계 성분만 뺄 수 있을지 모른다. 4회차에서 ID 가 LB +9.40 으로 실측됐으니 전부가 시계는 아니다"
     }
   ],
-  "next_action": "submissions/exp_003_catboost_tuned.zip 제출. 2026-08-11 기준 후보 구성은 확정이며 로컬에서 더 짤 것이 없다"
+  "next_action": "asof_* 축소를 3폴드로 재고, 10점을 넘으면 제출 경로에서 확인한다. 로컬 +20 이 안 되면 LB +10 이 안 되므로 제출 슬롯을 쓸 근거가 약하다"
 }

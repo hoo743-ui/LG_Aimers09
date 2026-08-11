@@ -1,0 +1,66 @@
+{
+ "exp": "exp019",
+ "_why": "남은 유일한 피처 축. (1) dev_* — prev1/3/5 게임 비율을 통산 비율로 뺀 최근 형태 편차. 4-9 에서 통한 것도 수준값이 아니라 편차였고 연도 누설 검사도 깨끗하다(AUC 0.515~0.528 비단조). (2) sk200_* — 표본이 적은 asof_* 비율을 2019~2020 사전값으로 당긴 축소. 트리는 rate x n 곱을 표현하기 어려우니 직접 만들어 준다. n<200 이 9%, n<500 이 19% 이고 24.6% 의 행에서 값이 0.01 이상 바뀐다.",
+ "_risk": "sk200_* 은 연도 AUC 가 원본보다 0.006~0.018 높다 (sk200_b_mid 0.600, 원본 0.593). 분모 n 이 통산 누적이라 단조 증가하는 탓이다. asof_*_n 자체는 이미 prod 에 있어 새 정보는 아니지만, 6회차(tmc_n, LB -29)와 같은 형태의 위험이므로 채택하면 반드시 명시할 것. k=1000 은 더 나빠서(0.603/0.611) 아예 안 쓴다.",
+ "folds": [
+  2021,
+  2022,
+  2024
+ ],
+ "seeds": [
+  42,
+  43
+ ],
+ "hparams": {
+  "n_iter": 1200,
+  "lr": 0.02,
+  "depth": 6,
+  "min_leaf": 1000,
+  "l2": 100.0,
+  "max_bins": 32,
+  "threads": 11
+ },
+ "variants": [
+  {
+   "tag": "cat_tuned",
+   "model": "cat",
+   "features": {
+    "base": "prod"
+   }
+  },
+  {
+   "tag": "dev_add",
+   "model": "cat",
+   "features": {
+    "base": "prod",
+    "add": [
+     "dev_p1_suc",
+     "dev_p3_suc",
+     "dev_p5_suc",
+     "dev_p1_mid",
+     "dev_p3_mid",
+     "dev_p5_mid"
+    ]
+   }
+  },
+  {
+   "tag": "sk200_add",
+   "model": "cat",
+   "features": {
+    "base": "prod",
+    "add": [
+     "sk200_p_succ",
+     "sk200_p_rev",
+     "sk200_p_mid",
+     "sk200_p_ball",
+     "sk200_p_str",
+     "sk200_b_succ",
+     "sk200_b_mid",
+     "sk200_p_fb",
+     "sk200_p_bb",
+     "sk200_p_os"
+    ]
+   }
+  }
+ ]
+}
