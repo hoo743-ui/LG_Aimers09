@@ -1,6 +1,6 @@
 {
   "_note": "규칙 준수 기준 현재 베이스라인. 실험이 이걸 이기기 전에는 절대 바꾸지 않는다.",
-  "updated": "2026-08-10",
+  "updated": "2026-08-11",
   "best_model": "baseline/rf_r7_LB825.48.pkl",
   "best_submission": "baseline/submit_r7_LB825.48.zip",
   "live_copies": {
@@ -76,17 +76,20 @@
       "lb_estimate_conservative": "약 866 (로컬 델타 x 0.5, README ④)",
       "risk": "requirements.txt 에 catboost==1.2.10 추가 필요",
       "verify": "verify_submit.py 1-4 통과, 추론 3.2초",
-      "seeds_note": "3 시드. 5 로 올리면 +1.5 추가 예상 (4-14)"
+      "seeds_note": "3 시드로 확정. 5 로 올려 실제로 빌드해 보니 제출 경로 2024 에서 -0.63 이었다 (748.77 -> 748.14). 3폴드 캐시 곡선의 +1.28 은 경로 편향 안이다 (4-14, 4-17)",
+      "final_2026_08_11": "이 위에 lr 0.01 x 2400 과 시드 5 를 얹어 봤으나 둘 다 제출 경로에서 부호가 뒤집혔다. 후보 구성은 이대로 확정 (4-15, 4-17, 4-18)"
     },
     {
       "path": "submissions/exp_001_no_batter_n.zip",
-      "rank": 2,
+      "rank": null,
+      "status": "WITHDRAWN",
       "model": "HGB",
       "local_2024": 699.73,
       "delta_vs_baseline": 32.25,
       "evidence": "fold2024 +30.5 (6/6 시드) 이지만 2021/2022 는 작은 음수",
       "risk": "단일 폴드 효과, 기전 미확인",
-      "verify": "1-4 통과"
+      "verify": "1-4 통과",
+      "withdrawn_reason": "EXP012 에서 폐기 — CatBoost 위에서는 효과가 +0.9 로 사라졌다. HGB 고유의 결함이었지 데이터 성질이 아니었다 (4-12)"
     }
   ],
   "closed_axes": [
@@ -106,24 +109,41 @@
     "CatBoost grow_policy Depthwise/Lossguide (-77 / -70 유의 음수, EXP013)",
     "CatBoost rsm 0.8 / subsample 0.8 (부호갈림, EXP013)",
     "asof_batter_n 제거 (CatBoost 에서 +0.9 로 소멸 — HGB 고유 결함이었다, EXP012)",
-    "시드 앙상블 3 이상 (3->5 가 +1.5, 포화, EXP015)"
+    "시드 앙상블 3 이상 (실험 경로 3->5 가 +1.28, 제출 경로에서 -0.63. 잡음 안, EXP015)",
+    "lr 0.04 x n_iter 600 (-14.43 유의 음수, EXP014)",
+    "lr 0.01 x n_iter 2400 (실험 경로 +5.83 유의인데 제출 경로 -2.88. 경로를 못 건넜다, EXP014)",
+    "lr 0.005 x n_iter 4800 (0.01 대비 +3.04 SE 2.50 부호갈림 미달. 비용 4배, EXP016)"
   ],
   "catboost_notes": {
     "thread_count": "결과에 영향을 준다. fold2024 seed42 에서 6스레드 717.97 vs 11스레드 712.29. 실험 비교 시 반드시 고정할 것 (runner 는 hparams.threads 로 키에 박는다)",
     "border_count": "기본 254 는 나쁘다. 최적은 16~32. 이 문제의 '과신하지 않기' 성질(4-1)과 같은 방향",
     "seed_noise": "HGB 의 1/10 이하. fold2024 두 시드 차이 0.08"
   },
+  "measurement_paths": {
+    "_note": "가장 중요한 방법론 사실 (README 4-17). 두 경로는 같은 설정에서도 13점 어긋난다. 실험 경로는 방향 탐색용이고, 10점 미만의 이득은 제출 경로에서 다시 재기 전까지 채택하지 않는다.",
+    "experiment": {
+      "runner": "exp/runner.py",
+      "input": "exp/cache/X.npy (float32 로 굳힌 행렬)",
+      "cat_encoding": "prep.py 가 미리 정수화",
+      "threads": 11,
+      "folds": [2021, 2022, 2024]
+    },
+    "submission": {
+      "runner": "train_cat.py",
+      "input": "pandas DataFrame (float64)",
+      "cat_encoding": "파이프라인 안 OrdinalEncoder",
+      "threads": "기본값 (이 PC 24)",
+      "folds": [2024]
+    },
+    "evidence": "같은 lr 0.02 / f2024 / s42: runner 733.99 vs train_cat 747.11. 각 경로는 결정적이다 (같은 설정 재실행 시 748.77 소수점까지 재현)",
+    "transfer_rule": "20점 넘는 효과는 두 경로 모두 통과했다 (CatBoost 전환 +64.84, 규제 +28.27). 6점 이하는 둘 다 부호가 뒤집혔다 (lr +5.83->-2.88, 시드 +1.28->-0.63)"
+  },
   "open_axes": [
     {
-      "axis": "lr 0.01 x n_iter 2400",
-      "status": "미완 (18칸 중 10칸)",
-      "partial": "3폴드 모두 양수 +7.89/+4.24/+6.05",
-      "cmd": "exp/runner.py --plan plans/exp014.json"
-    },
-    {
-      "axis": "제출본 시드 3 -> 5",
+      "axis": "pitcher_id/batter_id 의 시계 성분 제거",
       "status": "미실행",
-      "expected": "약 +1.5, 위험 없음"
+      "note": "ID 를 순위가 아닌 형태로 바꾸면 시계 성분만 뺄 수 있을지 모른다 (README 7장 6번). 4회차에서 ID 가 LB +9.40 으로 실측됐으니 전부가 시계는 아니다"
     }
-  ]
+  ],
+  "next_action": "submissions/exp_003_catboost_tuned.zip 제출. 2026-08-11 기준 후보 구성은 확정이며 로컬에서 더 짤 것이 없다"
 }

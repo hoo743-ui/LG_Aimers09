@@ -1,0 +1,48 @@
+{
+ "exp": "exp016",
+ "_why": "exp014 에서 lr 축이 단조였다. 0.04x600 -24 / 0.02x1200 기준 / 0.01x2400 +5.83. 한 칸 더 내려가면 남은 이득이 있는지 본다. 학습비는 기준의 4배.",
+ "folds": [
+  2021,
+  2022,
+  2024
+ ],
+ "seeds": [
+  42,
+  43
+ ],
+ "hparams": {},
+ "variants": [
+  {
+   "tag": "cat_tuned",
+   "model": "cat",
+   "features": {
+    "base": "prod"
+   },
+   "hparams": {
+    "n_iter": 1200,
+    "lr": 0.02,
+    "depth": 6,
+    "min_leaf": 1000,
+    "l2": 100.0,
+    "max_bins": 32,
+    "threads": 11
+   }
+  },
+  {
+   "tag": "lr005_i4800",
+   "model": "cat",
+   "features": {
+    "base": "prod"
+   },
+   "hparams": {
+    "n_iter": 4800,
+    "lr": 0.005,
+    "depth": 6,
+    "min_leaf": 1000,
+    "l2": 100.0,
+    "max_bins": 32,
+    "threads": 11
+   }
+  }
+ ]
+}
