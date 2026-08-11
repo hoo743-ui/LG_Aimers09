@@ -36,16 +36,20 @@ import subprocess
 import sys
 import time
 
+import numpy as np
+
 import analyze as A
+import runner as R
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 EXPDIR = os.path.join(ROOT, "exp")
+PREDS = os.path.join(EXPDIR, "preds")
 LEDGER = os.path.join(EXPDIR, "AUTO_LEDGER.csv")
 REPORT = os.path.join(EXPDIR, "AUTO_REPORT.md")
 STOP = os.path.join(EXPDIR, "AUTO_STOP")
 
 FIELDS = ["ts", "plan", "exp", "tag", "ref", "mean", "se", "n", "pos",
-          "same_sign", "fold_means", "verdict", "note"]
+          "same_sign", "fold_means", "verdict", "cells_missing", "note"]
 PATH_BIAS = 10.0          # 4-17: 이 밑은 제출 경로를 못 건넌다
 
 
@@ -85,15 +89,32 @@ def run_plan(path, shards, py):
 
 
 def summarize(plan):
-    """캐시가 아니라 로그에서 읽는다 — 이미 돌아간 칸도 그대로 판정에 들어간다."""
-    rows = A.load(plan["exp"])
+    """**로그가 아니라 `exp/preds/*.npz` 에서 읽는다.**
+
+    샤드 여러 개가 `experiment_log.jsonl` 에 동시에 append 하면 줄이 찢어진다.
+    그러면 짝비교에서 그 칸이 조용히 빠져 n 이 줄고, 판정이 5칸으로 내려간
+    것을 아무도 모른다 (exp020 에서 실제로 일어났다). npz 는 키마다 파일이
+    하나라 경쟁이 없다. 플랜에서 설정 키를 직접 계산해 그 파일을 읽는다.
+    """
     ref = plan.get("_ref", "cat_tuned")
+    rows, missing = [], 0
+    for cfg in R.expand(plan):
+        path = os.path.join(PREDS, f"{R.cfg_key(cfg)}.npz")
+        if not os.path.exists(path):
+            missing += 1
+            continue
+        d = np.load(path, allow_pickle=True)
+        m = json.loads(str(d["meta"]))
+        rows.append({**m, "tag": cfg["tag"], "exp": plan["exp"]})
+    if missing:
+        print(f"  [경고] 예측 파일 {missing}개 없음 — 그만큼 판정에서 빠진다",
+              flush=True)
     if not rows:
-        return ref, {}
-    return ref, A.report(rows, "score_fixed", ref)
+        return ref, {}, missing
+    return ref, A.report(rows, "score_fixed", ref), missing
 
 
-def append_ledger(plan_path, plan, ref, summary):
+def append_ledger(plan_path, plan, ref, summary, missing=0):
     exp = plan["exp"]
     new = not os.path.exists(LEDGER)
     with open(LEDGER, "a", encoding="utf-8", newline="") as f:
@@ -112,6 +133,7 @@ def append_ledger(plan_path, plan, ref, summary):
                 "fold_means": " ".join(f"{k}:{v:+.1f}"
                                        for k, v in s["fold_means"].items()),
                 "verdict": verdict_of(s),
+                "cells_missing": missing,
                 "note": plan.get("_why", "").replace("\n", " ")[:200],
             })
 
@@ -161,8 +183,8 @@ def main():
         print(f"[{i}/{len(plans)}] {name} 시작", flush=True)
         t0 = time.time()
         plan, ok, _ = run_plan(path, a.shards, a.python)
-        ref, summary = summarize(plan)
-        append_ledger(path, plan, ref, summary)
+        ref, summary, missing = summarize(plan)
+        append_ledger(path, plan, ref, summary, missing)
         write_report()
         mins = (time.time() - t0) / 60
         verdicts = {t: verdict_of(s) for t, s in summary.items()}
