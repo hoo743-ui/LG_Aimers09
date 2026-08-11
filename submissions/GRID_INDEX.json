@@ -1,0 +1,62 @@
+[
+  {
+    "label": "a120_s3_shift000",
+    "zip": "submissions\\grid_a120_s3_shift000.zip",
+    "base": "cat_alpha109.pkl",
+    "alpha": 1.2,
+    "shift": 0.0,
+    "center": 0.523766,
+    "n_models": 3,
+    "note": "11회차 제출본과 동일 (LB 931.53). 기준선",
+    "range": "0.3024~0.6717",
+    "clip_pct": 0.0
+  },
+  {
+    "label": "a120_s3_shift010",
+    "zip": "submissions\\grid_a120_s3_shift010.zip",
+    "base": "cat_alpha109.pkl",
+    "alpha": 1.2,
+    "shift": -0.01,
+    "center": 0.573766,
+    "n_models": 3,
+    "note": "탐침이 (i) 쪽으로 나오면 중간 단계",
+    "range": "0.2924~0.6617",
+    "clip_pct": 0.0
+  },
+  {
+    "label": "a120_s3_shift015",
+    "zip": "submissions\\grid_a120_s3_shift015.zip",
+    "base": "cat_alpha109.pkl",
+    "alpha": 1.2,
+    "shift": -0.015,
+    "center": 0.5987659999999999,
+    "n_models": 3,
+    "note": "탐침이 (i) 쪽이면 최적 근처",
+    "range": "0.2874~0.6567",
+    "clip_pct": 0.0
+  },
+  {
+    "label": "a120_s3_shift019",
+    "zip": "submissions\\grid_a120_s3_shift019.zip",
+    "base": "cat_alpha109.pkl",
+    "alpha": 1.2,
+    "shift": -0.019,
+    "center": 0.6187659999999999,
+    "n_models": 3,
+    "note": "이야기 (i) 의 최적 이동 (-0.0187)",
+    "range": "0.2834~0.6527",
+    "clip_pct": 0.0
+  },
+  {
+    "label": "affine_i_opt",
+    "zip": "submissions\\grid_affine_i_opt.zip",
+    "base": "cat_alpha109.pkl",
+    "alpha": 0.9651,
+    "shift": null,
+    "center": -0.259333,
+    "n_models": 3,
+    "note": "이야기 (i) 의 아핀 최적 (A*=0.9651, center=-0.2593). 기울기까지 최적",
+    "range": "0.3184~0.6154",
+    "clip_pct": 0.0
+  }
+]
