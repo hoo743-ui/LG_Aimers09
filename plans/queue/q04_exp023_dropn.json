@@ -1,0 +1,64 @@
+{
+ "exp": "exp023",
+ "_ref": "cat_tuned",
+ "_why": "표본 수 컬럼의 연도 누설. asof_batter_n 은 AUC 0.594 단조이고 시즌 중앙값이 584->4520 으로 커진다(통산 누적). tmc_n(0.602)이 6회차에서 LB 29점을 잃힌 것과 같은 형태다. asof_pitcher_n 제거는 한 번도 안 쟀다.",
+ "variants": [
+  {
+   "tag": "cat_tuned",
+   "model": "cat",
+   "features": {
+    "base": "prod"
+   }
+  },
+  {
+   "tag": "drop_pn",
+   "model": "cat",
+   "features": {
+    "base": "prod",
+    "drop": [
+     "asof_pitcher_n"
+    ]
+   }
+  },
+  {
+   "tag": "drop_bn",
+   "model": "cat",
+   "features": {
+    "base": "prod",
+    "drop": [
+     "asof_batter_n"
+    ]
+   }
+  },
+  {
+   "tag": "drop_all_n",
+   "model": "cat",
+   "features": {
+    "base": "prod",
+    "drop": [
+     "asof_pitcher_n",
+     "asof_batter_n",
+     "asof_pitcher_pitchmix_n"
+    ]
+   }
+  }
+ ],
+ "folds": [
+  2021,
+  2022,
+  2024
+ ],
+ "seeds": [
+  42,
+  43
+ ],
+ "hparams": {
+  "n_iter": 1200,
+  "lr": 0.02,
+  "depth": 6,
+  "min_leaf": 1000,
+  "l2": 100.0,
+  "max_bins": 32,
+  "threads": 11
+ }
+}

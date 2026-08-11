@@ -1,0 +1,44 @@
+{
+ "exp": "exp021",
+ "_ref": "cat_tuned",
+ "_why": "boosting_type Ordered. CatBoost 논문의 핵심 장치인데 한 번도 안 켰다. Plain 은 같은 데이터로 잎 값을 추정해 낙관 편향이 생기고, Ordered 는 순열 기반으로 그걸 줄인다. 학습이 몇 배 느리므로 플랜을 따로 둔다.",
+ "variants": [
+  {
+   "tag": "cat_tuned",
+   "model": "cat",
+   "features": {
+    "base": "prod"
+   }
+  },
+  {
+   "tag": "ordered",
+   "model": "cat",
+   "features": {
+    "base": "prod"
+   },
+   "hparams": {
+    "cb": {
+     "boosting_type": "Ordered"
+    }
+   }
+  }
+ ],
+ "folds": [
+  2021,
+  2022,
+  2024
+ ],
+ "seeds": [
+  42,
+  43
+ ],
+ "hparams": {
+  "n_iter": 1200,
+  "lr": 0.02,
+  "depth": 6,
+  "min_leaf": 1000,
+  "l2": 100.0,
+  "max_bins": 32,
+  "threads": 11
+ }
+}

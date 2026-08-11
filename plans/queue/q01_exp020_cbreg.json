@@ -1,0 +1,80 @@
+{
+ "exp": "exp020",
+ "_ref": "cat_tuned",
+ "_why": "아직 안 잰 CatBoost 규제 손잡이. random_strength 는 분할 점수에 넣는 잡음으로 4-1 의 '과신하지 않기' 와 방향이 같다. leaf_estimation 은 잎 값 계산 방식(Logloss 기본 Newton)이라 규제와 다른 축이다.",
+ "variants": [
+  {
+   "tag": "cat_tuned",
+   "model": "cat",
+   "features": {
+    "base": "prod"
+   }
+  },
+  {
+   "tag": "rstr_3",
+   "model": "cat",
+   "features": {
+    "base": "prod"
+   },
+   "hparams": {
+    "cb": {
+     "random_strength": 3.0
+    }
+   }
+  },
+  {
+   "tag": "rstr_0",
+   "model": "cat",
+   "features": {
+    "base": "prod"
+   },
+   "hparams": {
+    "cb": {
+     "random_strength": 0.0
+    }
+   }
+  },
+  {
+   "tag": "leaf_grad",
+   "model": "cat",
+   "features": {
+    "base": "prod"
+   },
+   "hparams": {
+    "cb": {
+     "leaf_estimation_method": "Gradient"
+    }
+   }
+  },
+  {
+   "tag": "leaf_it10",
+   "model": "cat",
+   "features": {
+    "base": "prod"
+   },
+   "hparams": {
+    "cb": {
+     "leaf_estimation_iterations": 10
+    }
+   }
+  }
+ ],
+ "folds": [
+  2021,
+  2022,
+  2024
+ ],
+ "seeds": [
+  42,
+  43
+ ],
+ "hparams": {
+  "n_iter": 1200,
+  "lr": 0.02,
+  "depth": 6,
+  "min_leaf": 1000,
+  "l2": 100.0,
+  "max_bins": 32,
+  "threads": 11
+ }
+}

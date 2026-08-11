@@ -42,6 +42,21 @@ TARGET = ft.TARGET
 CAT_COLS = ft.CAT_COLS
 VAL_SEASON = ft.VAL_SEASON
 
+# 최근 형태 편차 (EXP019). prev{1,3,5} 게임 비율에서 통산 비율을 뺀다.
+# 같은 행 안의 뺄셈이라 5) 원칙에 안전하고, 두 컬럼 모두 test.csv 의 공식
+# asof_* 컬럼이다. 4-9 에서 통한 것도 수준값이 아니라 편차였다.
+DEV_SPEC = [(f"dev_p{k}_{kind[:3]}",
+             f"asof_pitcher_prev{k}_game_{kind}_rate",
+             f"asof_pitcher_{kind}_rate")
+            for kind in ("success", "middle") for k in (1, 3, 5)]
+
+
+def add_dev(df):
+    """행 내 뺄셈으로 편차 컬럼을 만든다. 원본 컬럼은 그대로 둔다."""
+    for name, recent, ref in DEV_SPEC:
+        df[name] = df[recent].astype("float64") - df[ref].astype("float64")
+    return df
+
 
 def parse_args():
     p = argparse.ArgumentParser()
@@ -55,6 +70,9 @@ def parse_args():
                         "254 이고, 그대로 두면 fold2024 에서 717.97 -> 695.85 로 "
                         "떨어졌다. 경계가 적을수록 규제가 세다 (4-1 과 같은 방향).")
     p.add_argument("--seeds", type=int, default=3)
+    p.add_argument("--dev-feats", action="store_true",
+                   help="최근 형태 편차 6개를 추가한다 (EXP019). 실험 경로에서 "
+                        "3폴드 +10.39 이지만 부호가 갈렸다 — 제출 경로 확인용.")
     p.add_argument("--drop-feats", default=None)
     p.add_argument("--model-out", default="./model_cand/cat.pkl")
     p.add_argument("--save", action="store_true")
@@ -79,6 +97,14 @@ def make_pipeline(args, features, seed):
 def main():
     args = parse_args()
 
+    if args.dev_feats and args.save:
+        # bundle 의 features 에 dev_* 가 들어가면 script.py 의 build_features 가
+        # "컬럼 없음" 으로 죽는다. 추론 경로 지원을 먼저 넣을 것.
+        raise SystemExit(
+            "--dev-feats 와 --save 를 같이 쓰려면 script.py 가 dev 컬럼을 "
+            "만들 수 있어야 한다. 먼저 검증만(--save 없이) 재고, 수치가 "
+            "살아남으면 script.py 에 지원을 넣을 것.")
+
     test_cols = pd.read_csv(os.path.join(DATA_DIR, "test.csv"),
                             encoding="utf-8-sig", nrows=0).columns
     all_features = [c for c in test_cols if c != ft.ID]
@@ -97,6 +123,11 @@ def main():
                 "hand": ft.pack_table(h_all, ft.HAND_KEY),
                 "hand_map": {str(k): v for k, v in ft.HAND.items()},
                 "count_key": ft.COUNT_KEY, "hand_key": ft.HAND_KEY}
+
+    if args.dev_feats:
+        train = add_dev(train)
+        features += [n for n, _, _ in DEV_SPEC]
+        print(f"최근 형태 편차 {len(DEV_SPEC)}개 추가")
 
     if args.drop_feats:
         gone = [c.strip() for c in args.drop_feats.split(",") if c.strip()]

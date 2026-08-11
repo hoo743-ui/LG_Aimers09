@@ -1,0 +1,56 @@
+{
+ "exp": "exp022",
+ "_ref": "cat_tuned",
+ "_why": "dev 6개 묶음이 실험 경로 +10.39(부호갈림) / 제출 경로 +3.45 였다. 부분집합이 더 깨끗한지 본다 — middle 계열과 success 계열은 연도 AUC 도 다르다(0.517~0.528 vs 0.515~0.520).",
+ "variants": [
+  {
+   "tag": "cat_tuned",
+   "model": "cat",
+   "features": {
+    "base": "prod"
+   }
+  },
+  {
+   "tag": "dev_mid",
+   "model": "cat",
+   "features": {
+    "base": "prod",
+    "add": [
+     "dev_p1_mid",
+     "dev_p3_mid",
+     "dev_p5_mid"
+    ]
+   }
+  },
+  {
+   "tag": "dev_suc",
+   "model": "cat",
+   "features": {
+    "base": "prod",
+    "add": [
+     "dev_p1_suc",
+     "dev_p3_suc",
+     "dev_p5_suc"
+    ]
+   }
+  }
+ ],
+ "folds": [
+  2021,
+  2022,
+  2024
+ ],
+ "seeds": [
+  42,
+  43
+ ],
+ "hparams": {
+  "n_iter": 1200,
+  "lr": 0.02,
+  "depth": 6,
+  "min_leaf": 1000,
+  "l2": 100.0,
+  "max_bins": 32,
+  "threads": 11
+ }
+}

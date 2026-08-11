@@ -169,6 +169,9 @@ def build_model(cfg, n_features, cat_idx):
             # '조합' 이 아니라 'ID 하나의 target statistic' 만 보게 한다.
             if h.get("ctr_c") is not None:
                 extra["max_ctr_complexity"] = h["ctr_c"]
+        # 임의 인자 통로. 새 손잡이를 잴 때마다 코드를 고치지 않게 한다.
+        # hparams 전체가 캐시 키이므로 여기 들어간 값도 자동으로 키에 박힌다.
+        extra.update(h.get("cb", {}))
         return cls(
             iterations=h["n_iter"], learning_rate=h.get("lr", 0.02),
             depth=h.get("depth", 6),
