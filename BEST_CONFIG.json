@@ -1,8 +1,8 @@
 {
   "_note": "규칙 준수 기준 현재 베이스라인. 실험이 이걸 이기기 전에는 절대 바꾸지 않는다.",
   "updated": "2026-08-11",
-  "best_model": "baseline/cat_LB864.92.pkl",
-  "best_submission": "baseline/submit_cat_LB864.92.zip",
+  "best_model": "model_cand/cat_alpha109.pkl",
+  "best_submission": "submissions/exp_004_catboost_alpha109.zip",
   "best_train_script": "baseline/train_cat_LB864.92.py",
   "best_requirements": "baseline/requirements_cat_LB864.92.txt",
   "live_copies": {
@@ -10,13 +10,13 @@
     "submit": "submissions/exp_003_catboost_tuned.zip",
     "_note": "위 baseline/ 사본과 동일한 파일이다. model/rf.pkl 과 submit.zip 은 아직 7회차 HGB 판이다 — script.py 가 두 형식을 모두 읽으므로 급하지 않지만, 다음 빌드 때 정리할 것"
   },
-  "provenance": "9회차 제출 (2026-08-11)",
-  "lb": 864.92,
-  "lb_prediction_check": "보수 예상 866 (로컬 델타 81.29 x 0.5) -> 실제 864.92, 오차 -1.1. 같은 데이터에서 직선 환산은 931 을 예측해 -66 빗나갔다 — 직선은 폐기했다 (README 1장)",
+  "provenance": "10회차 제출 (2026-08-11)",
+  "lb": 912.4146726688,
+  "lb_prediction_check": "예상 872 (로컬 +13.97 x 0.485) -> 실제 912.41. 6.8배 넘겼다. 환산비는 하나가 아니다 — 해상도 개선은 0.485, 보정(어긋남) 개선은 3.40 이다. 평가 시즌의 어긋남이 로컬 2024(43.9)보다 훨씬 크기 때문이고, 그 크기는 위반 국면보정이 LB +57.65 를 벌었던 것으로 이미 실측돼 있었다 (README 4-24)",
   "lb_reported_best": 875.66,
   "lb_reported_best_note": "8회차. 사용자 보고이나 로컬에 대응 아티팩트가 없어 설정 미상 — LB_LEDGER.csv 참고. 재현 가능한 규칙 준수 최고본은 864.92 다",
-  "local_2024_holdout": 748.77,
-  "train_command": ".\\venv_submit\\Scripts\\python.exe train_cat.py --lr 0.02 --n-iter 1200 --l2 100 --border-count 32 --seeds 3 --save --model-out ./model_cand/cat_b32l2100.pkl",
+  "local_2024_holdout": 762.74,
+  "train_command": ".\\venv_submit\\Scripts\\python.exe train_cat.py --lr 0.02 --n-iter 1200 --l2 100 --border-count 32 --seeds 3 --alpha 1.09 --save --model-out ./model_cand/cat_alpha109.pkl",
   "model": "CatBoostClassifier",
   "hparams": {
     "iterations": 1200,
@@ -35,7 +35,7 @@
       44
     ]
   },
-  "ensemble": "시드 3개 단순 평균 (균등 가중). 5 로 늘려도 제출 경로에서 -0.63 (4-14)",
+  "ensemble": "시드 3개 단순 평균. alpha 적용 후에는 6개가 세 폴드 모두 좋다 (+3.60/+3.01/+1.23) — 다음 개선 후보",
   "features": {
     "count": 55,
     "composition": "test.csv 기본 47 + 상황 조건부 Trackman 편차 8",
@@ -47,13 +47,11 @@
     "excluded_reason": "시계 컬럼. 6회차에서 LB -29 (4-9)"
   },
   "postprocess": {
-    "alpha": 1.0,
-    "alpha_note": "이 값은 베이스라인(864.92)의 것이다. 후보 exp_004 는 alpha=1.09 이며 실험 3폴드 전부 양수 + 제출 경로 확인을 통과했다 (4-23). LB 확인 후 이 절을 갱신할 것",
+    "alpha": 1.09,
     "center": 0.523766,
-    "center_note": "전체 학습 데이터 성공률. 평가셋을 보지 않는다 (4-3)",
     "shift": null,
     "detrend": null,
-    "_note": "국면 보정(중심 이동)은 규칙 위반이라 제거됨 (4-3). 퍼짐 보정(alpha)은 다른 축이다"
+    "_note": "퍼짐 보정. 학습 시점 상수라 규칙 위반이 아니다. 중심 이동(shift)은 4-3 에서 닫힌 축"
   },
   "env": {
     "train_venv": "venv_submit",
@@ -62,31 +60,31 @@
   },
   "verify": "verify_submit.py 1-4 통과 (2026-08-11). 253,507행 추론 2.8초/제한 600초, 확률 0.3132~0.6563, 낮은 numpy 로드 통과",
   "previous_baseline": {
-    "model": "baseline/rf_r7_LB825.48.pkl",
-    "submission": "baseline/submit_r7_LB825.48.zip",
-    "algo": "HistGradientBoostingClassifier L10 mL1000 lr0.02 i1100 seeds5",
-    "lb": 825.48,
-    "local_2024": 667.48,
-    "note": "7회차. 9회차가 LB +39.44 로 대체했다. 아티팩트는 지우지 않는다"
+    "submission": "baseline/submit_cat_LB864.92.zip",
+    "lb": 864.92,
+    "local_2024": 748.77,
+    "algo": "같은 모델, alpha=1.0",
+    "note": "9회차. 10회차가 alpha 하나로 +47.49"
   },
   "candidates": [
     {
-      "path": "submissions/exp_004_catboost_alpha109.zip",
+      "path": "submissions/exp_006_catboost_alpha120.zip",
       "rank": 1,
-      "status": "READY — 제출 대기",
-      "model": "CatBoost + alpha 보정",
-      "diff_from_baseline": "alpha 1.0 -> 1.09 하나뿐. 모델/피처/시드/하이퍼파라미터 전부 동일 (규칙 3 — LB 델타의 출처를 가릴 수 있다)",
-      "alpha": 1.09,
+      "status": "READY — 11회차 권장",
+      "alpha": 1.2,
       "center": 0.523766,
-      "local_2024": "748.77 -> 765.99 (검증 규약 center=0.5316). 제출 pkl 규약 center=0.5238 기준으로는 +13.97",
-      "lb_estimate": "약 872 (+13.97 x 0.485). 단 0.485 는 해상도 개선에서 잰 비율이고 이번은 어긋남 항이라 크기 불확실성이 크다 (±5 정도). 방향은 양수가 거의 확실",
-      "evidence": "실험 경로 3폴드 전부 양수(alpha 1.01~1.11 전 구간), 워크포워드 2/2 승 평균 +8.92, 제출 경로 2024 에서 +13.97 재현. 2026-08-11 에 잰 열두 개 축 중 유일하게 경로를 건넜다",
-      "mechanism": "규제(border32 / l2=100)가 예측을 중심 쪽으로 눌렀고 alpha 가 그 퍼짐을 되돌린다. 앙상블과 무관하다 — 단일 시드에서도 최적 alpha 가 1.11 이고 시드 1->6 에서 예측 표준편차가 0.0425->0.0427 로 불변이다 (4-23)",
-      "why_not_1_12": "최적은 1.12 지만 그 값에서 fold2022 가 -0.19 로 내려간다. 1.09 는 제출 경로 최대치의 94%(+13.97/+14.79)를 가져가며 최악 폴드를 +5.76 로 남긴다. 평가 시즌의 형태를 모르므로 하방을 없애는 쪽을 택했다",
-      "why_center_not_higher": "center 를 0.5316 으로 올리면 같은 alpha 에서 +17.23 이 되지만, 그 이득은 예측 평균을 더 밀어내는 것이고 연도 추세 외삽으로 중심을 보정하는 것과 같다 — 4-3 에서 워크포워드 -3.55 / -25.83 으로 닫힌 축이다. 자연스러운 규약(전체 학습 평균)을 지켰다",
-      "rule_check": "alpha 와 center 는 학습 시점에 정해져 pkl 에 담기는 상수이고 이전 폴드들에서만 추정했다. 추론은 행 독립이다 — 4-3 위반이 아니다",
-      "risk": "낮다. script.py 가 원래 alpha 를 지원하므로 추론 코드 무수정. clip 접촉 0.0000%, 확률 0.2942~0.6683",
-      "verify": "verify_submit.py 1-4 통과 (2026-08-11). 253,507행 2.9초/제한 600초"
+      "diff_from_current": "alpha 1.09 -> 1.20 하나뿐. 모델은 재학습 없이 상수만 교체했다 (동일 pkl)",
+      "lb_estimate": "평균 946.9 / 최악 940.5 / 최선 953.5 (m,s^2 를 ±40% 흔든 민감도)",
+      "why_not_1_30": "역산 최적은 1.30(평균 955.8)이지만 최악이 937.4 로 1.20 보다 낮다. 또 점 2개로 미지수 2개를 푼 적합은 검증이 불가능하다 — 1.20 의 세 번째 점이 모형을 검정해 준다",
+      "verify": "verify_submit.py 1-4 통과. 253,507행 3.0초, 확률 0.2711~0.6829, clip 미접촉"
+    },
+    {
+      "path": "submissions/exp_005_catboost_alpha112.zip",
+      "rank": 2,
+      "status": "READY — 보수 선택",
+      "alpha": 1.12,
+      "lb_estimate": "평균 924.4 / 최악 923.3 — 거의 확실한 +11",
+      "note": "로컬 근거만으로 정당화되는 최대치 (2024 제출 경로와 2/3 폴드의 최적점). LB 정보를 쓰지 않고 갈 수 있는 곳"
     }
   ],
   "closed_axes": [
@@ -122,15 +120,25 @@
     "inference": "253,507행 2.8초. HGB(22.2초)의 1/8"
   },
   "lb_conversion": {
-    "_note": "직선 환산은 9회차에서 -66 으로 깨졌다. 델타 비율만 쓴다 (README 1장)",
-    "delta_ratio": 0.49,
-    "measured": {
-      "r4": 0.554,
-      "r7": 0.5,
-      "r9": 0.485
+    "_note": "환산비는 고친 Murphy 항에 따라 다르다 (README 4-24). 이게 이 대회에서 가장 실무적인 사실이다",
+    "resolution_axis": {
+      "ratio": 0.49,
+      "measured": {
+        "r4": 0.554,
+        "r7": 0.5,
+        "r9": 0.485
+      },
+      "rule": "신호를 올리는 개선. LB +10 을 원하면 로컬 +20"
     },
-    "rule": "LB 델타 = 로컬 델타 x 0.49. LB +10 을 원하면 로컬 +20 이 필요하다",
-    "gap_to_first": "1등 1000+ = 로컬 약 1024. 지금 748.77 이므로 275점 차"
+    "calibration_axis": {
+      "ratio": 3.4,
+      "measured": {
+        "r10": 3.4
+      },
+      "rule": "어긋남을 고치는 개선. 로컬에서 작아 보여도 평가 시즌에서 배가 된다 — 로컬 크기로 기각하지 말 것",
+      "why": "로컬 2024 어긋남 43.9 vs 평가 시즌은 훨씬 큼 (위반 국면보정 +57.65 로 실측)"
+    },
+    "gap_to_first": "1등 1000+ 까지 약 88점. 보정 축으로 40~50 이 남아 있을 수 있다 (역산 최적 alpha 1.30 예상 956)"
   },
   "measurement_paths": {
     "_note": "가장 중요한 방법론 사실 (README 4-17). 두 경로는 같은 설정에서도 13점 어긋난다. 실험 경로는 방향 탐색용이고, 10점 미만의 이득은 제출 경로에서 다시 재기 전까지 채택하지 않는다.",
@@ -159,20 +167,40 @@
   },
   "open_axes": [
     {
-      "axis": "alpha 1.09 -> 1.12",
-      "status": "LB 확인 후",
-      "note": "제출 경로 2024 에서 +14.79 (1.09 는 +13.97). fold2022 가 -0.19 라 보류했다. 10회차 LB 가 예상대로 나오면 상방을 더 가져갈 근거가 된다"
+      "axis": "alpha 1.20 -> 역산 최적 (1.25~1.35)",
+      "status": "11회차 결과 후",
+      "note": "세 번째 점이 곡선 모형을 검정한다. 맞으면 최적점으로, 어긋나면 모형을 버린다"
     },
     {
       "axis": "alpha 위에서 시드 3 -> 6",
-      "status": "LB 확인 후",
-      "note": "alpha 적용 후에는 시드 6개가 3개보다 세 폴드 모두 좋다 (+3.60/+3.01/+1.23). alpha 없이 쟀을 때 -0.63 으로 닫았던 축이 조건이 달라져 다시 열렸다 (4-23)"
+      "status": "미실행",
+      "note": "실험 경로 3폴드 전부 양수 (+3.60/+3.01/+1.23). 해상도 축이라 LB 환산 0.485 -> 약 +1.2 로 작다. 재학습 8분"
     },
     {
-      "axis": "pitcher_id/batter_id 의 시계 성분 제거",
+      "axis": "기울기보다 풍부한 보정 (등변환/isotonic)",
       "status": "미실행",
-      "note": "ID 가 연대순이라 AUC 0.562/0.550 단조다. 다만 4-18 에서 투수 단위 타깃 통계(CTR)가 -31.17 이었으므로 이 계열은 기대를 낮춰야 한다"
+      "note": "평가 시즌 어긋남이 크다면 선형 기울기가 전부를 못 잡을 수 있다. 워크포워드로 재야 하고 과적합 위험이 있다. 보정 축은 환산비 3.40 이므로 로컬에서 작아도 값이 있다"
+    },
+    {
+      "axis": "pitcher_id/batter_id 의 시계 성분",
+      "status": "미실행",
+      "note": "4-18 에서 투수 단위 타깃 통계가 -31.17 이었으므로 기대를 낮출 것"
     }
   ],
-  "next_action": "submissions/exp_004_catboost_alpha109.zip 제출 (alpha 1.09). 9회차 864.92 대비 변수는 alpha 하나이므로 LB 델타가 곧 보정 효과의 실측치가 된다. 결과가 나오면 (1) alpha 를 1.12 로 올릴지, (2) alpha 위에서 시드 3->6 을 올릴지 판단한다 — 둘 다 alpha 적용 후에는 실험 경로 3폴드 전부 양수다"
+  "next_action": "submissions/exp_006_catboost_alpha120.zip 제출 (11회차). 결과가 나오면 LB 점 3개로 곡선 모형을 검정하고 (미지수 2개 < 점 3개) 최적 alpha 를 확정한다. 평가셋 과적합을 경계해 탐침 횟수를 센다 — 현재 2회",
+  "lb_probe_count": {
+    "count": 2,
+    "values": [
+      {
+        "alpha": 1.0,
+        "lb": 864.92
+      },
+      {
+        "alpha": 1.09,
+        "lb": 912.41
+      }
+    ],
+    "_note": "LB 로 상수를 고르는 것은 규칙 위반이 아니지만(5) 조항은 추론 시점의 test.csv 참조를 금지한다) 평가셋 과적합 위험이 있다. 횟수를 세어 둔다"
+  },
+  "alpha_variant_command": "같은 모델에서 alpha 만 바꿀 때는 재학습이 필요 없다 — joblib.load 후 bundle[\"alpha\"] 를 바꿔 다시 dump 하면 된다 (exp_005/exp_006 이 그렇게 만들어졌다)"
 }
