@@ -73,6 +73,10 @@ def parse_args():
     p.add_argument("--dev-feats", action="store_true",
                    help="최근 형태 편차 6개를 추가한다 (EXP019). 실험 경로에서 "
                         "3폴드 +10.39 이지만 부호가 갈렸다 — 제출 경로 확인용.")
+    p.add_argument("--save-val-pred", default=None,
+                   help="검증 시즌 예측을 npz 로 저장한다. 캘리브레이션(alpha) "
+                        "을 재학습 없이 재기 위한 것 — 제출 경로 예측의 퍼짐은 "
+                        "실험 경로와 다르므로 여기서 다시 재야 한다 (4-17).")
     p.add_argument("--drop-feats", default=None)
     p.add_argument("--model-out", default="./model_cand/cat.pkl")
     p.add_argument("--save", action="store_true")
@@ -162,6 +166,16 @@ def main():
           f"범위 {p_ens.min():.4f}~{p_ens.max():.4f}")
     print(f"  중심 편차 {p_ens.mean() - r:+.4f} "
           f"(예측 {p_ens.mean():.4f} vs 실제 {r:.4f})")
+
+    if args.save_val_pred:
+        os.makedirs(os.path.dirname(args.save_val_pred) or ".", exist_ok=True)
+        np.savez_compressed(
+            args.save_val_pred, p=p_ens.astype(np.float32),
+            y=y_va.astype(np.int8),
+            center_train=float(y_tr.mean()), base=float(base),
+            config=f"lr={args.lr} i={args.n_iter} l2={args.l2} "
+                   f"border={args.border_count} seeds={args.seeds}")
+        print(f"  검증 예측 저장: {args.save_val_pred}")
 
     if not args.save:
         print("\n(저장하려면 --save)")

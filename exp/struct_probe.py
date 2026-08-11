@@ -134,20 +134,50 @@ def main():
     rate = yv.mean()
     base = rate * (1 - rate)
     print(f"{'그룹':>16} {'범주':>6} {'out':>9} {'in':>9} {'이동':>9}")
+    ytr = y[tr].astype(np.float64)
     for g in groups:
         if g not in ix:
             continue
         col = np.asarray(X[:, ix[g]], dtype=np.float64)
-        gtr, gva = col[tr], col[va]
-        ytr = y[tr].astype(np.float64)
-        keys = np.unique(gva[~np.isnan(gva)])
-        mtr = {k: ytr[gtr == k].mean() for k in keys if (gtr == k).sum() >= 200}
-        pout = np.array([mtr.get(k, ytr.mean()) for k in gva])
-        min_ = {k: yv[gva == k].mean() for k in keys if (gva == k).sum() >= 200}
-        pin = np.array([min_.get(k, rate) for k in gva])
-        print(f"{g:>16} {len(keys):>6} {score_of(yv,pout,base):>9.1f} "
-              f"{score_of(yv,pin,base):>9.1f} "
-              f"{score_of(yv,pin,base)-score_of(yv,pout,base):>+9.1f}")
+        # bincount 로 그룹 평균을 한 번에 낸다 (범주마다 마스크를 돌면 pitcher_id
+        # 792개 x 120만 행이라 분 단위로 느려진다)
+        code = np.nan_to_num(col, nan=-1).astype(np.int64)
+        code -= code.min()
+        K = code.max() + 1
+        ctr, cva = code[tr], code[va]
+        s_tr, n_tr = np.bincount(ctr, ytr, K), np.bincount(ctr, None, K)
+        s_va, n_va = np.bincount(cva, yv, K), np.bincount(cva, None, K)
+        MIN = 200
+        m_tr = np.where(n_tr >= MIN, s_tr / np.maximum(n_tr, 1), ytr.mean())
+        m_va = np.where(n_va >= MIN, s_va / np.maximum(n_va, 1), rate)
+        pout, pin = m_tr[cva], m_va[cva]
+        so, si = score_of(yv, pout, base), score_of(yv, pin, base)
+        print(f"{g:>16} {int((n_va>0).sum()):>6} {so:>9.1f} {si:>9.1f} "
+              f"{si-so:>+9.1f}")
+
+    print("\n=== 4. 오라클과 합법의 격차 — asof 는 그 신호를 얼마나 담고 있나 ===")
+    print("1차원 비모수 적합: 학습 구간에서 분위 50칸의 평균을 구해 2024 에 쓴다.")
+    print("pitcher_id 오라클(3번의 in)이 874.8 이었다. 그 중 얼마가 합법인가.\n")
+    ytr = y[tr].astype(np.float64)
+    print(f"{'컬럼':>44} {'점수':>9}")
+    for c in ["asof_pitcher_success_rate",
+              "asof_pitcher_prev5_game_success_rate",
+              "asof_pitcher_prev1_game_success_rate",
+              "asof_pitcher_middle_rate", "asof_batter_success_rate"]:
+        if c not in ix:
+            continue
+        v = np.asarray(X[:, ix[c]], dtype=np.float64)
+        vtr, vva = v[tr], v[va]
+        ok = ~np.isnan(vtr)
+        edges = np.unique(np.quantile(vtr[ok], np.linspace(0, 1, 51)))
+        btr = np.clip(np.searchsorted(edges, vtr, "right") - 1, 0, len(edges) - 2)
+        bva = np.clip(np.searchsorted(edges, vva, "right") - 1, 0, len(edges) - 2)
+        K = len(edges) - 1
+        s, n = np.bincount(btr[ok], ytr[ok], K), np.bincount(btr[ok], None, K)
+        mean = np.where(n >= 200, s / np.maximum(n, 1), ytr.mean())
+        p = mean[bva]
+        p = np.where(np.isnan(vva), ytr.mean(), p)
+        print(f"{c:>44} {score_of(yv, p, base):>9.1f}")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,60 @@
+{
+ "exp": "exp024",
+ "_ref": "cat_tuned",
+ "_why": "구조 진단 결과에서 나온 가설. 학습 구간의 그룹 평균을 다음 시즌에 쓰면 점수가 0 인데(수준 이동이 신호를 전멸시킨다) 그 시즌 자신의 pitcher_id 평균은 874.8 이다. asof_* 는 그 행 시점까지의 기록이라 2025 행의 값이 이미 2025 를 반영하므로, 타깃을 '그 행 자신의 as-of 수준에 대한 잔차'로 바꾸면 예측이 각 투수의 현재 수준을 따라간다. 추론에서 다시 더한다 (행 독립이라 5) 원칙에 안전).",
+ "_note": "rmse 태그(오프셋 없는 같은 회귀)를 같이 둬서 잔차 효과만 떼어낸다 — exp018 에서 캐시돼 있어 공짜다. cat_tuned 는 Logloss 분류기 기준선.",
+ "folds": [
+  2021,
+  2022,
+  2024
+ ],
+ "seeds": [
+  42,
+  43
+ ],
+ "hparams": {
+  "n_iter": 1200,
+  "lr": 0.02,
+  "depth": 6,
+  "min_leaf": 1000,
+  "l2": 100.0,
+  "max_bins": 32,
+  "threads": 11
+ },
+ "variants": [
+  {
+   "tag": "cat_tuned",
+   "model": "cat",
+   "features": {
+    "base": "prod"
+   }
+  },
+  {
+   "tag": "rmse",
+   "model": "catr",
+   "features": {
+    "base": "prod"
+   }
+  },
+  {
+   "tag": "resid_p",
+   "model": "catr",
+   "features": {
+    "base": "prod"
+   },
+   "hparams": {
+    "target": "resid_p"
+   }
+  },
+  {
+   "tag": "resid_pb",
+   "model": "catr",
+   "features": {
+    "base": "prod"
+   },
+   "hparams": {
+    "target": "resid_pb"
+   }
+  }
+ ]
+}

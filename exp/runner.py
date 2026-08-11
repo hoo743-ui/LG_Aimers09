@@ -43,6 +43,35 @@ CLOCK_FEATS = ["tmc_n", "tmh_n"]
 # 투수)는 외삽되지 않고 사전값을 받는다.
 ID_CATS = ["pitcher_id", "batter_id", "pitcher_team_id", "batter_team_id"]
 
+# ---- 타깃 변환. hparams.target 으로 고른다 ----
+#
+# 구조 진단(struct_probe)이 알려준 것: 학습 구간의 그룹 평균을 다음 시즌에 그대로
+# 쓰면 점수가 **0** 이다 (수준 이동이 신호를 전멸시킨다). 반면 그 시즌 자신의
+# pitcher_id 평균은 874.8 점이다. 신호는 투수 단위로 크게 있고, '지금 시즌 기준'
+# 으로 알아야 한다.
+#
+# `asof_*` 는 그 행 시점까지의 기록이므로 2025 행의 값은 이미 2025 를 반영한다
+# (다른 행을 보지 않으니 5) 원칙에 안전하다). 그래서 타깃을 **그 행 자신의 as-of
+# 수준에 대한 잔차**로 바꾼다. 추론에서 다시 더한다.
+#
+#     학습:  y - a      추론:  clip(a + f(x), 0, 1)
+#
+# 회귀여야 하므로 model="catr" 과 함께 쓴다.
+TARGET_OFFSETS = {
+    "resid_p": ["asof_pitcher_success_rate"],
+    "resid_b": ["asof_batter_success_rate"],
+    "resid_pb": ["asof_pitcher_success_rate", "asof_batter_success_rate"],
+}
+
+
+def offset_of(X, meta, spec, rows):
+    """타깃 오프셋 벡터. 결측은 학습 구간 평균으로 채운다."""
+    cols = TARGET_OFFSETS[spec]
+    vals = [np.asarray(X[:, meta["cols"].index(c)], dtype=np.float64)
+            for c in cols]
+    a = np.mean(vals, axis=0)
+    return a[rows]
+
 
 def resolve_cats(meta, feats, spec):
     """hparams.cat_cols -> cat_features 로 넘길 컬럼 위치.
@@ -189,9 +218,14 @@ def build_model(cfg, n_features, cat_idx):
     raise ValueError(m)
 
 
-def staged_curve(cfg, model, Xv, y, base, n_iter):
-    """반복수별 검증 점수 곡선 + 최종 반복수에서의 예측."""
+def staged_curve(cfg, model, Xv, y, base, n_iter, offset=None):
+    """반복수별 검증 점수 곡선 + 최종 반복수에서의 예측.
+
+    `offset` 이 있으면 잔차 학습이므로 예측에 다시 더한다 (TARGET_OFFSETS).
+    """
     m = cfg["model"]
+    if offset is None:
+        offset = 0.0
     if m == "hgb":
         curve = []
         p_last = None
@@ -223,8 +257,8 @@ def staged_curve(cfg, model, Xv, y, base, n_iter):
         step = max(1, n_iter // 20)
         for k in range(step, n_iter + 1, step):
             curve.append(score_of(y, np.clip(
-                model.predict(Xv, ntree_end=k), 0.0, 1.0), base))
-        p = np.clip(model.predict(Xv), 0.0, 1.0).astype(np.float32)
+                offset + model.predict(Xv, ntree_end=k), 0.0, 1.0), base))
+        p = np.clip(offset + model.predict(Xv), 0.0, 1.0).astype(np.float32)
         return np.array(curve, dtype=np.float32), p
     raise ValueError(m)
 
@@ -259,13 +293,27 @@ def run_one(cfg, X, y, season, meta, force=False):
     r = float(yva.mean())
     base = r * (1 - r)
 
+    # 타깃 변환 (잔차 학습). 오프셋은 학습 구간 평균으로 결측을 채운다 —
+    # 검증 구간 평균을 쓰면 그 시즌을 들여다보는 것이 된다.
+    tgt = cfg["hparams"].get("target")
+    off_va = None
+    fit_y = ytr
+    if tgt:
+        if cfg["model"] != "catr":
+            raise ValueError(f"target={tgt} 는 회귀(model='catr')와 써야 한다")
+        a = offset_of(X, meta, tgt, slice(None))
+        mu = float(np.nanmean(a[tr]))
+        a = np.where(np.isnan(a), mu, a)
+        off_tr, off_va = a[np.where(tr)[0]], a[np.where(va)[0]]
+        fit_y = ytr.astype(np.float64) - off_tr
+
     t0 = time.time()
     model = build_model(cfg, len(feats), cat_idx)
-    model.fit(Xtr, ytr)
+    model.fit(Xtr, fit_y)
     fit_s = time.time() - t0
 
     n_iter = cfg["hparams"]["n_iter"]
-    curve, p = staged_curve(cfg, model, Xva, yva, base, n_iter)
+    curve, p = staged_curve(cfg, model, Xva, yva, base, n_iter, off_va)
     step = 1 if cfg["model"] == "hgb" else max(1, n_iter // 20)
     b = int(np.argmax(curve))
 
