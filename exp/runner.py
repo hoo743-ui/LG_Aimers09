@@ -37,6 +37,37 @@ DEFAULT_FOLDS = [2021, 2022, 2024]
 # ---- 시계 컬럼. 6회차에서 LB 29점을 잃힌 것들 (4-9) ----
 CLOCK_FEATS = ["tmc_n", "tmh_n"]
 
+# ---- CatBoost 범주형(target statistics) 후보 ----
+# 지금까지 이 컬럼들은 정수로 인코딩돼 **숫자 피처로** 들어갔다. cat_features 로
+# 선언하면 CatBoost 가 ordered target statistics 를 만든다. 미지 범주(2025 의 새
+# 투수)는 외삽되지 않고 사전값을 받는다.
+ID_CATS = ["pitcher_id", "batter_id", "pitcher_team_id", "batter_team_id"]
+
+
+def resolve_cats(meta, feats, spec):
+    """hparams.cat_cols -> cat_features 로 넘길 컬럼 위치.
+
+    None 이면 빈 목록 = 지금까지의 동작(전부 숫자 취급) 그대로다.
+    """
+    if not spec:
+        return []
+    low = [c for c in meta["cat"] if c in feats]
+    ids = [c for c in ID_CATS if c in feats]
+    table = {"low": low, "ids": ids, "low_ids": low + ids}
+    if spec not in table:
+        raise ValueError(f"cat_cols={spec} (가능: {sorted(table)})")
+    return [feats.index(c) for c in table[spec]]
+
+
+def as_frame(A, feats, cat_pos):
+    """CatBoost 의 cat_features 는 정수/문자열만 받는다. float32 행렬에서 해당
+    컬럼만 int32 로 되돌린 DataFrame 을 만든다 (결측은 없음을 prep 에서 확인)."""
+    import pandas as pd
+    cp = set(cat_pos)
+    return pd.DataFrame(
+        {c: (A[:, j].astype(np.int32) if j in cp else A[:, j])
+         for j, c in enumerate(feats)}, copy=False)
+
 
 def load_cache():
     X = np.load(f"{CACHE}/X.npy", mmap_mode="r")
@@ -114,9 +145,14 @@ def build_model(cfg, n_features, cat_idx):
             subsample=h.get("subsample", 1.0),
             subsample_freq=1 if h.get("subsample", 1.0) < 1 else 0,
             random_state=cfg["seed"], n_jobs=-1, verbose=-1)
-    if m == "cat":
-        from catboost import CatBoostClassifier
+    if m in ("cat", "catr"):
+        # catr = CatBoostRegressor(RMSE). 채점이 Brier(=MSE)이므로 0/1 을 직접
+        # 회귀하면 지표를 그대로 최소화한다. cat 은 기본 Logloss 다.
+        from catboost import CatBoostClassifier, CatBoostRegressor
+        cls = CatBoostRegressor if m == "catr" else CatBoostClassifier
         extra = {}
+        if m == "catr":
+            extra["loss_function"] = h.get("loss", "RMSE")
         # grow_policy 를 바꾸면 트리 모양이 달라진다. 기본 SymmetricTree 는
         # min_data_in_leaf 를 조용히 무시하지만 Depthwise/Lossguide 는 쓴다.
         if h.get("grow_policy"):
@@ -126,7 +162,14 @@ def build_model(cfg, n_features, cat_idx):
         if h.get("subsample"):
             extra["bootstrap_type"] = h.get("bootstrap_type", "Bernoulli")
             extra["subsample"] = h["subsample"]
-        return CatBoostClassifier(
+        # 범주형 선언. cat_cols 가 없으면 예전과 완전히 같은 모델이다.
+        if cat_idx:
+            extra["cat_features"] = list(cat_idx)
+            # 조합 CTR 은 비용이 크다. 고카디널리티 ID 를 넣을 때는 1 로 묶어
+            # '조합' 이 아니라 'ID 하나의 target statistic' 만 보게 한다.
+            if h.get("ctr_c") is not None:
+                extra["max_ctr_complexity"] = h["ctr_c"]
+        return cls(
             iterations=h["n_iter"], learning_rate=h.get("lr", 0.02),
             depth=h.get("depth", 6),
             min_data_in_leaf=h.get("min_leaf", 1000),
@@ -170,6 +213,16 @@ def staged_curve(cfg, model, Xv, y, base, n_iter):
                 Xv, ntree_end=k)[:, 1], base))
         p = model.predict_proba(Xv)[:, 1].astype(np.float32)
         return np.array(curve, dtype=np.float32), p
+    if m == "catr":
+        # 회귀는 [0,1] 을 벗어날 수 있다. 제출 경로(script.py)도 clip 하므로
+        # 여기서도 똑같이 자른다 — 안 자르면 Brier 가 과대 벌점을 받는다.
+        curve = []
+        step = max(1, n_iter // 20)
+        for k in range(step, n_iter + 1, step):
+            curve.append(score_of(y, np.clip(
+                model.predict(Xv, ntree_end=k), 0.0, 1.0), base))
+        p = np.clip(model.predict(Xv), 0.0, 1.0).astype(np.float32)
+        return np.array(curve, dtype=np.float32), p
     raise ValueError(m)
 
 
@@ -189,13 +242,16 @@ def run_one(cfg, X, y, season, meta, force=False):
 
     feats = resolve_features(meta, cfg["features"])
     idx = [meta["cols"].index(c) for c in feats]
-    cat_idx = [feats.index(c) for c in meta["cat"] if c in feats]
+    cat_idx = resolve_cats(meta, feats, cfg["hparams"].get("cat_cols"))
     Y = cfg["fold"]
 
     tr = season < Y
     va = season == Y
     Xtr = np.ascontiguousarray(X[np.where(tr)[0]][:, idx])
     Xva = np.ascontiguousarray(X[np.where(va)[0]][:, idx])
+    if cat_idx:
+        Xtr = as_frame(Xtr, feats, cat_idx)
+        Xva = as_frame(Xva, feats, cat_idx)
     ytr, yva = y[tr].astype(np.int8), y[va].astype(np.int8)
     r = float(yva.mean())
     base = r * (1 - r)

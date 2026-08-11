@@ -1,0 +1,68 @@
+{
+ "exp": "exp017",
+ "_why": "CatBoost 를 지금까지 '빠른 GBDT' 로만 썼다. 범주형 컬럼을 정수로 인코딩해 숫자 피처로 먹였고, 간판 기능인 ordered target statistics 는 한 번도 켜지 않았다. cat_low 는 저카디널리티 3개만, cat_ids 는 거기에 pitcher_id(792)/batter_id(830)/팀 2개를 더한다. 둘의 차이가 ID 의 target statistic 효과다. 부수 효과 — 미지 범주(2025 의 새 투수)가 숫자 외삽 대신 사전값을 받는다.",
+ "_note": "exp012 의 one-hot 기각과는 다른 기전이다. 원핫은 차원을 늘려 희소하게 쪼개고, CTR 은 타깃 통계로 하나의 수치를 만든다.",
+ "folds": [
+  2021,
+  2022,
+  2024
+ ],
+ "seeds": [
+  42,
+  43
+ ],
+ "hparams": {},
+ "variants": [
+  {
+   "tag": "cat_tuned",
+   "model": "cat",
+   "features": {
+    "base": "prod"
+   },
+   "hparams": {
+    "n_iter": 1200,
+    "lr": 0.02,
+    "depth": 6,
+    "min_leaf": 1000,
+    "l2": 100.0,
+    "max_bins": 32,
+    "threads": 11
+   }
+  },
+  {
+   "tag": "cat_low",
+   "model": "cat",
+   "features": {
+    "base": "prod"
+   },
+   "hparams": {
+    "n_iter": 1200,
+    "lr": 0.02,
+    "depth": 6,
+    "min_leaf": 1000,
+    "l2": 100.0,
+    "max_bins": 32,
+    "threads": 11,
+    "cat_cols": "low"
+   }
+  },
+  {
+   "tag": "cat_ids",
+   "model": "cat",
+   "features": {
+    "base": "prod"
+   },
+   "hparams": {
+    "n_iter": 1200,
+    "lr": 0.02,
+    "depth": 6,
+    "min_leaf": 1000,
+    "l2": 100.0,
+    "max_bins": 32,
+    "threads": 11,
+    "cat_cols": "low_ids",
+    "ctr_c": 1
+   }
+  }
+ ]
+}
