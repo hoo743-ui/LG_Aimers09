@@ -127,10 +127,35 @@ def predict_proba(bundle, X):
         acc = p if acc is None else acc + p
     preds = acc / len(models)
 
+    preds = preds + platoon_adjust(bundle, X)
+
     alpha = float(bundle.get("alpha", 1.0))
     center = float(bundle.get("center", 0.5))
     preds = center + alpha * (preds - center)
     return preds.clip(0.0, 1.0)
+
+
+def platoon_adjust(bundle, X):
+    """투수 x 타자손 편차를 더한다. 없으면 0.
+
+    표는 **학습 구간에서만** 만들어져 모델 파일에 담긴 상수다 (4-30). 조회 키는
+    그 행 자신의 `pitcher_id` 와 `batter_hand` 뿐이라 행 독립이고, 평가셋의 다른
+    행을 보지 않는다 — 5) 원칙에 안전하다.
+
+    담긴 값은 수준값이 아니라 **그 투수 자신의 전체 성공률 대비 편차**이므로
+    리그 수준의 연도 이동은 뺄셈에서 소거된다. 학습 구간에 없던 투수는 0 이다.
+    """
+    pl = bundle.get("platoon") if isinstance(bundle, dict) else None
+    if not pl:
+        return 0.0
+    w = float(pl["w"])
+    tab = pl["table"]
+    # numpy 를 새로 import 하지 않는다 — 이 프로젝트에서 실패한 제출 2건이
+    # 전부 추론 환경 문제였다 (6-1, 6-4). pandas 만으로 끝낸다.
+    keys = zip(X["pitcher_id"].astype("int64"),
+               X["batter_hand"].astype("int64"))
+    return w * pd.Series([tab.get(k, 0.0) for k in keys],
+                         dtype="float64").to_numpy()
 
 
 # =======================
