@@ -70,6 +70,10 @@ def parse_args():
                         "254 이고, 그대로 두면 fold2024 에서 717.97 -> 695.85 로 "
                         "떨어졌다. 경계가 적을수록 규제가 세다 (4-1 과 같은 방향).")
     p.add_argument("--seeds", type=int, default=3)
+    p.add_argument("--random-strength", type=float, default=1.0,
+                   help="분할 점수에 넣는 잡음. 실험 경로에서 rho^2 순위 1위였다 "
+                        "(+13.37, 2/3, 2022 -14.31). 규칙 ⑥ 대로 제출 경로에서 "
+                        "다시 재기 위한 손잡이다 (4-25).")
     p.add_argument("--dev-feats", action="store_true",
                    help="최근 형태 편차 6개를 추가한다 (EXP019). 실험 경로에서 "
                         "3폴드 +10.39 이지만 부호가 갈렸다 — 제출 경로 확인용.")
@@ -98,7 +102,7 @@ def make_pipeline(args, features, seed):
     clf = CatBoostClassifier(
         iterations=args.n_iter, learning_rate=args.lr, depth=args.depth,
         min_data_in_leaf=args.min_leaf, l2_leaf_reg=args.l2,
-        border_count=args.border_count,
+        border_count=args.border_count, random_strength=args.random_strength,
         random_seed=seed, verbose=0, allow_writing_files=False)
     return Pipeline([("pre", pre), ("clf", clf)])
 
