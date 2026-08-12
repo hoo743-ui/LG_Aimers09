@@ -32,12 +32,12 @@ import numpy as np
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CACHE = os.path.join(ROOT, "exp", "cache")
 BASE_PKL = os.path.join(ROOT, "model_cand", "grid_affine_solved.pkl")
-OUT_PKL = os.path.join(ROOT, "model_cand", "cat_plat_cnt.pkl")
-OUT_ZIP = os.path.join(ROOT, "submissions", "cand_plat_cnt.zip")
+OUT_PKL = os.path.join(ROOT, "model_cand", "cat_plat_cnt2.pkl")
+OUT_ZIP = os.path.join(ROOT, "submissions", "cand_plat_cnt_w058.zip")
 
 W1, K1 = 0.20, 300          # 플래툰
-W2, K2 = 0.20, 800          # 플래툰 x 카운트 (부모 = 플래툰 셀)
-ALPHA, CENTER = 1.090437, 0.620268     # 중앙 추정으로 푼 아핀
+W2, K2 = 0.5785, 800     # 16회차(950.01)로 k2=0.9340 실측 후 재최적화
+ALPHA, CENTER = 1.089294, 0.622802     # 위 w 에 맞춰 다시 푼 아핀
 R_EVAL, M_EVAL = 0.460900, 0.473942
 
 
