@@ -16,7 +16,9 @@ r"""6-2 제출 전 점검 목록을 자동으로 돌린다.
 
 사용법:
     .\.venv\Scripts\python.exe verify_submit.py
+    .\.venv\Scripts\python.exe verify_submit.py --zip submissions\후보.zip
 """
+import argparse
 import os
 import shutil
 import subprocess
@@ -159,6 +161,14 @@ def check_probs(sub):
 
 
 def main():
+    # 12회차에 --zip 을 줬는데 argparse 가 없어 조용히 무시됐다. 기본값 submit.zip
+    # (6회차 RF 판)이 검증되고 "통과"가 찍혔다 — 엉뚱한 파일에 도장을 찍는 사고다.
+    # 이제 플래그를 받고, 모르는 인자는 오류로 낸다.
+    global ZIP
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--zip", default=ZIP, help="검증할 zip (기본: VERIFY_ZIP 또는 submit.zip)")
+    ZIP = ap.parse_args().zip
+
     if not os.path.exists(ZIP):
         fail(f"{ZIP} 없음 — make_submit.py 를 먼저 돌릴 것")
     work = tempfile.mkdtemp(prefix="submit_check_")

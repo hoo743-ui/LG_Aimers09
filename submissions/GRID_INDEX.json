@@ -58,5 +58,17 @@
     "note": "이야기 (i) 의 아핀 최적 (A*=0.9651, center=-0.2593). 기울기까지 최적",
     "range": "0.3184~0.6154",
     "clip_pct": 0.0
+  },
+  {
+    "label": "affine_solved",
+    "zip": "submissions\\grid_affine_solved.zip",
+    "base": "cat_alpha109.pkl",
+    "alpha": 1.10503,
+    "shift": null,
+    "center": 0.598664,
+    "n_models": 3,
+    "note": "탐침 934.10 으로 평가셋이 풀린 뒤의 진짜 아핀 최적 (A*=1.10503, center=0.598664, m=0.473979). 예상 942.46",
+    "range": "0.3121~0.6521",
+    "clip_pct": 0.0
   }
 ]

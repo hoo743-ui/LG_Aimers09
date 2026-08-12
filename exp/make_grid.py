@@ -11,6 +11,7 @@ r"""제출 후보 격자를 한 번에 만든다. 재학습 0회.
 
     .\.venv\Scripts\python.exe exp\make_grid.py
 """
+import argparse
 import json
 import os
 import subprocess
@@ -40,9 +41,16 @@ GRID = [
      "시드 6개 + 탐침 이동"),
     ("a120_s6_shift015", "cat_a120_s6.pkl",  1.20, -0.015,
      "시드 6개 + (i) 최적 근처"),
+    ("affine_solved",    "cat_alpha109.pkl", 1.105030, None,
+     "탐침 934.10 으로 평가셋이 풀린 뒤의 진짜 아핀 최적 (A*=1.10503, "
+     "center=0.598664, m=0.473979). 예상 942.46"),
 ]
 # 이야기 (i) 아핀 최적의 절편 (shift_solve.py 가 낸 값)
 AFFINE_I_CENTER = -0.259333
+# 12회차 탐침으로 확정된 아핀 최적의 절편. 이야기 (i) 는 기각됐다
+AFFINE_SOLVED_CENTER = 0.598664
+CENTER_OVERRIDE = {"affine_i_opt": AFFINE_I_CENTER,
+                   "affine_solved": AFFINE_SOLVED_CENTER}
 
 
 def build(label, base, alpha, shift, note):
@@ -51,7 +59,7 @@ def build(label, base, alpha, shift, note):
         return None, f"기반 pkl 없음: {base}"
     b = dict(joblib.load(src))
     if shift is None:
-        center = AFFINE_I_CENTER
+        center = CENTER_OVERRIDE[label]
     else:
         center = C_TRAIN + shift / (1 - alpha) if alpha != 1.0 else C_TRAIN
     b["alpha"] = float(alpha)
@@ -80,11 +88,24 @@ def build(label, base, alpha, shift, note):
 
 
 def main():
+    ap = argparse.ArgumentParser()
+    # 시드 6개 판은 제출 경로에서 -10.4 로 기각돼 zip 을 만들지 않기로 했다. 그런데
+    # cat_a120_s6.pkl 이 생긴 뒤로는 통짜 실행이 그 결정을 되돌려 버린다 — 라벨을
+    # 골라 짓고 색인은 병합한다.
+    ap.add_argument("--only", nargs="*", default=None, help="지을 라벨만 지정")
+    a = ap.parse_args()
+    todo = [g for g in GRID if a.only is None or g[0] in a.only]
+
     d = np.load(os.path.join(ROOT, "exp", "valpred_cat_s3.npz"),
                 allow_pickle=True)
     p = d["p"].astype(np.float64)
-    out = []
-    for label, base, alpha, shift, note in GRID:
+    idx = os.path.join(ROOT, "submissions", "GRID_INDEX.json")
+    if a.only and os.path.exists(idx):
+        with open(idx, encoding="utf-8") as f:
+            out = [e for e in json.load(f) if e["label"] not in a.only]
+    else:
+        out = []
+    for label, base, alpha, shift, note in todo:
         info, err = build(label, base, alpha, shift, note)
         if info is None:
             print(f"  [건너뜀] {label}: {err.strip()[:120]}")
@@ -96,8 +117,7 @@ def main():
         out.append(info)
         print(f"  {info['zip']:44s} alpha={alpha:<6.4f} center={info['center']:+.6f} "
               f"모델 {info['n_models']}개  clip {info['clip_pct']:.3f}%")
-    with open(os.path.join(ROOT, "submissions", "GRID_INDEX.json"), "w",
-              encoding="utf-8") as f:
+    with open(idx, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, indent=2)
     print(f"\n{len(out)}개 생성. 색인: submissions/GRID_INDEX.json")
     print("clip 접촉이 0 이 아닌 판은 그만큼 보정이 잘려 이득이 줄어든다 — 확인할 것")
