@@ -1,0 +1,15 @@
+{
+ "exp": "exp030",
+ "folds": [2023],
+ "seeds": [42, 43, 44],
+ "hparams": {},
+ "variants": [
+  {
+   "tag": "cat_tuned",
+   "model": "cat",
+   "features": {"base": "prod"},
+   "hparams": {"n_iter": 1200, "lr": 0.02, "depth": 6,
+               "min_leaf": 1000, "l2": 100.0, "max_bins": 32, "threads": 11}
+  }
+ ]
+}
