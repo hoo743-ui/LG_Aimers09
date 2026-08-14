@@ -151,6 +151,15 @@ ASOF_NCOL = {"pitch": ("asof_pitcher_n", "pitcher_id"),
 ASOF_COLS = [f"cur_{lb}" for _, _, lb, _ in ASOF_SPEC] + \
             [f"cur_logn_{k}" for k in ("pitch", "mix", "bat")]
 
+# 최근 경기 vs **시즌내 누적** (F). 공식 prev{1,3,5} 게임 컬럼에서 그 행의
+# `cur_*` 를 뺀다. CAAFE 는 `prev1 - 통산rate` 였는데 통산에는 이력이 섞여
+# 있어 척도가 다른 두 값을 뺀 것이었다. `cur_*` 는 같은 시즌 안의 누적이라
+# 뺄셈이 성립한다 — 같은 창 안에서 "최근이 시즌평균보다 좋은가"가 된다.
+FORM_SPEC = [("succ", "asof_pitcher_prev{}_game_success_rate"),
+             ("mid", "asof_pitcher_prev{}_game_middle_rate")]
+FORM_WIN = (1, 3, 5)
+FORM_COLS = [f"form_{lb}{k}" for lb, _ in FORM_SPEC for k in FORM_WIN]
+
 
 def attach_asof_state(df, bundle):
     """AS-OF 분해 — 통산 누적에서 **현재 시즌 상태**를 복원한다.
@@ -198,6 +207,11 @@ def attach_asof_state(df, bundle):
                          else 0.0 for i in ids], index=df.index, dtype="float64")
         tot = n_now * df[rc].astype("float64").fillna(0.0)
         df[f"cur_{lb}"] = ((tot - p_e) / cur).where(cur > 0)
+    for lb, pat in FORM_SPEC:
+        for k in FORM_WIN:
+            src = pat.format(k)
+            df[f"form_{lb}{k}"] = (df[src].astype("float64")
+                                   - df[f"cur_{lb}"]) if src in df else np.nan
     return df
 
 
