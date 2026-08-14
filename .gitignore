@@ -37,3 +37,6 @@ exp/cache/
 exp/preds/
 exp/*.log
 model_cand/
+
+# 강의자료 (대용량 바이너리, 저장소에 넣지 않음)
+*.pdf
