@@ -80,6 +80,60 @@ def attach_ctx(df, bundle):
     return out
 
 
+CAAFE_COLS = ["cf_same_hand", "cf_form5", "cf_share_reverse", "cf_share_ball",
+              "cf_mix_entropy", "cf_log_pn", "cf_trend13", "cf_trend35",
+              "cf_midform1", "cf_midtrend13", "cf_ball_minus_strike"]
+
+
+def attach_caafe(df):
+    """야구 도메인 파생변수 11개.
+
+    전부 **그 행 안의 값만** 쓰는 산술이다. 평가셋의 다른 행도, 학습 데이터의
+    집계도 참조하지 않으므로 5) 평가 데이터 예측 원칙에 안전하다 — test.csv 에
+    이 행 하나만 있어도 값이 같다.
+
+    선정 근거: 도메인 후보 40개를 만들어 3폴드(2022/2023/2024)에서 재고,
+    **세 폴드 모두에서 중요도가 반복적으로 높았던 것만** 남겼다. 폴드 점수로
+    고르면 폴드에 과적합되므로 중요도 일관성을 기준으로 삼았다.
+
+    갈래
+      같은손        투수손 == 타자손. 플래툰 효과는 투수의 가장 안정적인 특성이다
+                    (시즌 간 지속성 0.42~0.45, 전체 성공률은 0.20~0.67).
+      폼 편차/추세   prev{1,3,5} 게임과 시즌 비율의 차. 트리가 축평행 분할로
+                    한 번에 못 만드는 형태다.
+      실패 구성     실패가 가운데/볼/반대로 쪼개지는 비율. 투수의 지문.
+      구종 엔트로피  구사 분포의 다양성.
+    """
+    import numpy as np
+
+    g = lambda c: df[c].astype("float64")
+    eps = 1e-6
+    ps = g("asof_pitcher_success_rate")
+    pm, pb = g("asof_pitcher_middle_rate"), g("asof_pitcher_ball_rate")
+    pr, pst = g("asof_pitcher_reverse_rate"), g("asof_pitcher_strike_rate")
+    fail = (1.0 - ps).clip(lower=eps)
+    mix = [g(f"asof_pitcher_{k}_rate").clip(lower=eps, upper=1.0)
+           for k in ("fastball", "breaking", "offspeed")]
+    tot = sum(mix)
+    ent = -sum((m / tot) * np.log(m / tot) for m in mix)
+
+    df["cf_same_hand"] = (g("pitcher_hand") == g("batter_hand")).astype("float64")
+    df["cf_form5"] = g("asof_pitcher_prev5_game_success_rate") - ps
+    df["cf_share_reverse"] = pr / fail
+    df["cf_share_ball"] = pb / fail
+    df["cf_mix_entropy"] = ent
+    df["cf_log_pn"] = np.log1p(g("asof_pitcher_n"))
+    df["cf_trend13"] = (g("asof_pitcher_prev1_game_success_rate")
+                        - g("asof_pitcher_prev3_game_success_rate"))
+    df["cf_trend35"] = (g("asof_pitcher_prev3_game_success_rate")
+                        - g("asof_pitcher_prev5_game_success_rate"))
+    df["cf_midform1"] = g("asof_pitcher_prev1_game_middle_rate") - pm
+    df["cf_midtrend13"] = (g("asof_pitcher_prev1_game_middle_rate")
+                           - g("asof_pitcher_prev3_game_middle_rate"))
+    df["cf_ball_minus_strike"] = pb - pst
+    return df
+
+
 def build_features(df, bundle):
     """모델 입력 추출.
 
@@ -233,6 +287,10 @@ def main():
     print("Build features...")
     ids = test[ID_COL].tolist()
     test = attach_ctx(test, model)
+    # 번들이 요구할 때만 만든다 — 기존 제출본은 영향받지 않는다.
+    if isinstance(model, dict) and any(
+            c in (model.get("features") or []) for c in CAAFE_COLS):
+        test = attach_caafe(test)
     X = build_features(test, model)
     print(f" features={X.shape[1]}")
 
