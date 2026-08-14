@@ -134,6 +134,73 @@ def attach_caafe(df):
     return df
 
 
+# (as-of 비율 컬럼, 그 비율의 분모 n 컬럼, 라벨, 어느 선수 id 로 묶이는가)
+ASOF_SPEC = [("asof_pitcher_success_rate", "asof_pitcher_n", "succ", "pitch"),
+             ("asof_pitcher_middle_rate", "asof_pitcher_n", "mid", "pitch"),
+             ("asof_pitcher_ball_rate", "asof_pitcher_n", "ball", "pitch"),
+             ("asof_pitcher_reverse_rate", "asof_pitcher_n", "rev", "pitch"),
+             ("asof_pitcher_strike_rate", "asof_pitcher_n", "str", "pitch"),
+             ("asof_pitcher_fastball_rate", "asof_pitcher_pitchmix_n", "fb", "mix"),
+             ("asof_pitcher_breaking_rate", "asof_pitcher_pitchmix_n", "bb", "mix"),
+             ("asof_pitcher_offspeed_rate", "asof_pitcher_pitchmix_n", "os", "mix"),
+             ("asof_batter_success_rate", "asof_batter_n", "bsucc", "bat"),
+             ("asof_batter_middle_rate", "asof_batter_n", "bmid", "bat")]
+ASOF_NCOL = {"pitch": ("asof_pitcher_n", "pitcher_id"),
+             "mix": ("asof_pitcher_pitchmix_n", "pitcher_id"),
+             "bat": ("asof_batter_n", "batter_id")}
+ASOF_COLS = [f"cur_{lb}" for _, _, lb, _ in ASOF_SPEC] + \
+            [f"cur_logn_{k}" for k in ("pitch", "mix", "bat")]
+
+
+def attach_asof_state(df, bundle):
+    """AS-OF 분해 — 통산 누적에서 **현재 시즌 상태**를 복원한다.
+
+    `data_description.md` L86 이 정의하듯 `asof_*` 는 "해당 행의 투구 직전까지"의
+    누적이고, 시즌마다 리셋되지 않는 **통산값**이다 (실측 확인: 한 투수의
+    `asof_pitcher_n` 이 2019 2,757 -> 2024 15,449 로 시즌을 넘어 이어진다).
+
+    따라서 그 선수의 **학습 구간 통산**을 빼면 현재 시즌 상태가 나온다.
+
+        cur_n    = asof_n(행) - prior_n[선수]
+        cur_rate = (asof_n * asof_rate)(행) - prior_events[선수]) / cur_n
+
+    `prior_*` 는 학습 데이터만으로 만들어 모델 파일에 담은 상수다.
+
+    **왜 새 정보인가** — 모델이 보는 `asof_pitcher_success_rate` 는 통산이라
+    이력과 현재 폼이 섞여 있고, 모델은 그 선수의 직전 시즌말 통산을 모르므로
+    원리적으로 못 가른다. 이 분해가 그것을 갈라 준다.
+
+    **규정 5)** — 행 자신의 공식 `asof_*` 컬럼(L182 에서 사용 허가 명시)과
+    학습 데이터 상수만 쓴다. 평가셋의 다른 행을 보지 않으므로 test.csv 에 이 행
+    하나만 있어도 값이 같다.
+
+    검증 — 2024 폴드에서 `cur_n` 이 실제 시즌내 순번과 100.0000% 일치,
+    `cur_rate` 복원 평균절대오차 3.1e-6.
+    """
+    import numpy as np
+
+    pri = bundle.get("asof_prior") or {}
+    N = {}
+    for kind, (ncol, idcol) in ASOF_NCOL.items():
+        tab = pri.get(kind, {})
+        ids = df[idcol].astype("int64")
+        n_now = df[ncol].astype("float64").fillna(0.0)
+        p_n = pd.Series([tab.get(i, (0.0,))[0] for i in ids],
+                        index=df.index, dtype="float64")
+        cur = (n_now - p_n).clip(lower=0.0)
+        N[kind] = (n_now, cur, ids, tab)
+        df[f"cur_logn_{kind}"] = np.log1p(cur)
+    for j, (rc, nc, lb, kind) in enumerate(ASOF_SPEC):
+        n_now, cur, ids, tab = N[kind]
+        # 같은 kind 안에서 몇 번째 비율인지 (prior 벡터의 위치)
+        pos = [k for k, sp in enumerate(ASOF_SPEC) if sp[3] == kind].index(j) + 1
+        p_e = pd.Series([tab.get(i, (0.0,))[pos] if len(tab.get(i, (0.0,))) > pos
+                         else 0.0 for i in ids], index=df.index, dtype="float64")
+        tot = n_now * df[rc].astype("float64").fillna(0.0)
+        df[f"cur_{lb}"] = ((tot - p_e) / cur).where(cur > 0)
+    return df
+
+
 def build_features(df, bundle):
     """모델 입력 추출.
 
@@ -291,6 +358,9 @@ def main():
     if isinstance(model, dict) and any(
             c in (model.get("features") or []) for c in CAAFE_COLS):
         test = attach_caafe(test)
+    if isinstance(model, dict) and any(
+            c in (model.get("features") or []) for c in ASOF_COLS):
+        test = attach_asof_state(test, model)
     X = build_features(test, model)
     print(f" features={X.shape[1]}")
 
