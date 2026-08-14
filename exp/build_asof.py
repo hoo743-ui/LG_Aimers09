@@ -84,6 +84,9 @@ OUT_ZIP = os.path.join(ROOT, "submissions", "cand_asof.zip")
 # --form 일 때 (23회차). 22회차 아티팩트를 절대 덮어쓰지 않는다.
 OUT_PKL_F = os.path.join(ROOT, "model_cand", "cat_asof_f.pkl")
 OUT_ZIP_F = os.path.join(ROOT, "submissions", "cand_asof_f.zip")
+# --ctx 일 때 (D x 맥락). Champion 아티팩트와 이름이 겹치지 않는다.
+OUT_PKL_X = os.path.join(ROOT, "model_cand", "cat_asof_x.pkl")
+OUT_ZIP_X = os.path.join(ROOT, "submissions", "cand_asof_x.zip")
 
 
 def nested_dev(parent, child, y, k):
@@ -154,9 +157,24 @@ def main():
     ap.add_argument("--seeds", type=int, default=3)
     ap.add_argument("--form", action="store_true",
                     help="F(최근경기 vs 시즌내 누적) 6개를 더한다 — 23회차")
+    ap.add_argument("--ctx", action="store_true",
+                    help="X(D x 맥락) 8개를 더한다 — d_decomp 최유력")
+    ap.add_argument("--center", type=float, default=None,
+                    help="이미 푼 클린 아핀 center 를 재사용한다")
+    ap.add_argument("--skip-eval", action="store_true",
+                    help="홀드아웃/아핀 단계를 건너뛴다 (--center 필수). 그 단계 "
+                         "뒤에서 죽었을 때 학습만 다시 돌리기 위한 것이고, 상수는 "
+                         "반드시 앞선 실행의 출력에서 그대로 가져와야 한다")
     a = ap.parse_args()
-    acols = sc.ASOF_COLS + (sc.FORM_COLS if a.form else [])
-    out_pkl, out_zip = ((OUT_PKL_F, OUT_ZIP_F) if a.form else (OUT_PKL, OUT_ZIP))
+    assert not (a.form and a.ctx), "한 번에 하나만 바꾼다"
+    acols = (sc.ASOF_COLS + (sc.FORM_COLS if a.form else [])
+             + (sc.CTX_COLS if a.ctx else []))
+    a.acols = acols
+    out_pkl, out_zip = (OUT_PKL, OUT_ZIP)
+    if a.form:
+        out_pkl, out_zip = OUT_PKL_F, OUT_ZIP_F
+    elif a.ctx:
+        out_pkl, out_zip = OUT_PKL_X, OUT_ZIP_X
 
     t0 = time.time()
     tc = pd.read_csv(os.path.join(ft.DATA_DIR, "test.csv"),
@@ -200,12 +218,19 @@ def main():
     PHA = PH * 10 + (SS > BB).astype(np.int64)
     AX = [(P, PH), (PH, PHA), (PHA, PHA * 100 + (BB * 4 + SS)), (PH, PH * 10 + OB)]
 
+    if a.skip_eval:
+        assert a.center is not None, "--skip-eval 은 --center 가 있어야 한다"
+        print(f"  홀드아웃/아핀 건너뜀 — center={a.center:.6f} 재사용", flush=True)
+        return finish(a, [tr], y, features, AX, ctx_pack, a.center,
+                      out_pkl, out_zip)
+
     # --- 2024 홀드아웃: 대조 vs 신규, 그리고 클린 아핀용 적률 ---
     m_tr, m_va = season < 2024, season == 2024
     post = np.column_stack([
         look(*nested_dev(p[m_tr], c[m_tr], y[m_tr], k), c[m_va])
         for (p, c), k in zip(AX, KSH)]) @ WPOST
-    drop = sc.FORM_COLS if a.form else sc.ASOF_COLS
+    drop = (sc.FORM_COLS if a.form else
+            sc.CTX_COLS if a.ctx else sc.ASOF_COLS)
     base_f = [c for c in features if c not in drop]
     ref = f"대조 {len(base_f)}p" + (" (D=22회차)" if a.form else "")
     new = f"신규 {len(features)}p"
@@ -247,22 +272,47 @@ def main():
     print(f"  alpha={ALPHA:.6f}   center={center:.6f}")
     # 기준선 — --form 은 22회차 실측(1040.8656) 위에 곱한다. 22회차는 2024
     # 배수의 78~87% 가 평가셋으로 넘어왔으므로(17-i) 그 구간도 같이 찍는다.
-    b0 = 1040.8656 if a.form else 955.64
+    b0 = 1040.8656 if (a.form or a.ctx) else 955.64
     g = r1 / r0 - 1.0
     print(f"  기대 LB  {b0:.4f} x {r1/r0:.4f} = **{b0*(1+g):.1f}**")
-    if a.form:
+    if a.form or a.ctx:
         print(f"  전이 78~87% 가정  {b0*(1+g*0.78):.1f} ~ {b0*(1+g*0.87):.1f}")
     if not a.build:
         print("\n(--build 를 주면 pkl/zip 을 만든다)")
         return
+    return finish(a, [tr], y, features, AX, ctx_pack, center, out_pkl, out_zip)
+
+
+def finish(a, box, y, features, AX, ctx_pack, center, out_pkl, out_zip):
+    """전체 학습 -> 편차표 -> 번들 -> zip. `--skip-eval` 이 여기로 바로 온다.
+
+    **메모리** — 이 PC 는 가용 3GB 다. 전체 데이터(1,475,092행) 학습에서 세 번
+    조용히 죽었다 (홀드아웃 1.22M행은 통과한다). 봉우리를 세 군데서 낮춘다.
+
+      1. `box` 로 받아 즉시 pop 한다 -> 호출자 프레임이 원본을 안 붙잡는다
+      2. 번들에 필요한 `asof_prior` 를 **먼저** 뽑고 원본 DataFrame 을 버린다
+      3. 학습 행렬을 float32 로 내린다 (894MB -> 447MB). `border_count`=32 로
+         양자화되므로 경계가 달라지지 않는다
+    """
+    tr = box.pop()
+    pri = prior_tables(tr, np.ones(len(tr), bool))
+    Xtr = tr[features].copy()
+    # 범주형 3개는 문자열이다 (`top_bottom` = 'T'/'B' 등). 통째로 캐스팅하면
+    # ValueError 로 죽는다 — 수치 컬럼만 내린다.
+    num = [c for c in features if c not in ft.CAT_COLS]
+    Xtr[num] = Xtr[num].astype(np.float32)
+    del tr, box
+    print(f"  학습 행렬 {Xtr.shape} float32 "
+          f"({Xtr.memory_usage(deep=True).sum()/1e6:.0f}MB)", flush=True)
 
     models = []
     for s in range(42, 42 + a.seeds):
         t = time.time()
         mm = pipeline(features, s)
-        mm.fit(tr[features], y.astype(int))
+        mm.fit(Xtr, y.astype(int))
         models.append(mm)
         print(f"  seed {s} 학습 {time.time()-t:.0f}s", flush=True)
+    del Xtr
 
     (u1, t1), (uC, tC), (uN, tN), (u3, t3) = [
         nested_dev(p, c, y, k) for (p, c), k in zip(AX, KSH)]
@@ -289,7 +339,7 @@ def main():
          "features": features, "spec": [f"cat-s{s}" for s in
                                         range(42, 42 + a.seeds)],
          "shift": None, "detrend": None, "ctx": ctx_pack,
-         "asof_prior": prior_tables(tr, np.ones(len(tr), bool)),
+         "asof_prior": pri,
          "platoon": [
              {"w": float(WPOST[0]), "cols": ["pitcher_id", "batter_hand"],
               "table": tab1, "note": "dev(투수x타자손|부모=투수), n/(n+300)"},
@@ -300,7 +350,7 @@ def main():
              {"w": float(WPOST[3]),
               "cols": ["pitcher_id", "batter_hand", "num_runners_on"],
               "table": tab3, "note": "dev(플래툰x주자유무|부모=플래툰), n/(n+2000)"}],
-         "note": (f"catboost x{a.seeds}; AS-OF 현재상태 분해 {len(acols)}개 "
+         "note": (f"catboost x{a.seeds}; AS-OF 현재상태 분해 {len(a.acols)}개 "
                   f"in-model; p += 편차4 -> center+{ALPHA}*(p-center) -> clip. "
                   f"walk-forward 배수 1.3968 (min 1.0322, 3/3). "
                   f"클린 아핀 (r_hat 추세외삽 + m_hat 워크포워드), 평가셋 정보 미사용")}

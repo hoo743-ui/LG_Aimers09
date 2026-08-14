@@ -160,6 +160,15 @@ FORM_SPEC = [("succ", "asof_pitcher_prev{}_game_success_rate"),
 FORM_WIN = (1, 3, 5)
 FORM_COLS = [f"form_{lb}{k}" for lb, _ in FORM_SPEC for k in FORM_WIN]
 
+# D x 맥락 (X). "D 가 특별히 강하거나 약해지는 상황이 있는가"를 트리에 직접
+# 준다. 트리는 두 열의 곱을 분할로 근사하기 어렵고(축평행), 그래서 이 8개는
+# 모델이 스스로 못 만드는 형태다. 재료는 전부 그 행 자신의 값이다.
+CTX_MUL = [("adv", "카운트 우위 (strikes > balls)"),
+           ("onb", "주자 유무"),
+           ("sh", "같은 손 (투수손 == 타자손)"),
+           ("bs", "볼 - 스트라이크")]
+CTX_COLS = [f"dx_{lb}_{tag}" for lb in ("succ", "mid") for tag, _ in CTX_MUL]
+
 
 def attach_asof_state(df, bundle):
     """AS-OF 분해 — 통산 누적에서 **현재 시즌 상태**를 복원한다.
@@ -212,6 +221,16 @@ def attach_asof_state(df, bundle):
             src = pat.format(k)
             df[f"form_{lb}{k}"] = (df[src].astype("float64")
                                    - df[f"cur_{lb}"]) if src in df else np.nan
+    mul = {"adv": (df["strikes_before"].astype("float64")
+                   > df["balls_before"].astype("float64")).astype("float64"),
+           "onb": (df["num_runners_on"].astype("float64") > 0).astype("float64"),
+           "sh": (df["pitcher_hand"].astype("float64")
+                  == df["batter_hand"].astype("float64")).astype("float64"),
+           "bs": (df["balls_before"].astype("float64")
+                  - df["strikes_before"].astype("float64"))}
+    for lb in ("succ", "mid"):
+        for tag, _ in CTX_MUL:
+            df[f"dx_{lb}_{tag}"] = df[f"cur_{lb}"] * mul[tag]
     return df
 
 
