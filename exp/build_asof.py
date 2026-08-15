@@ -159,6 +159,8 @@ def main():
                     help="F(최근경기 vs 시즌내 누적) 6개를 더한다 — 23회차")
     ap.add_argument("--ctx", action="store_true",
                     help="X(D x 맥락) 8개를 더한다 — d_decomp 최유력")
+    ap.add_argument("--lvl", action="store_true",
+                    help="H1(수준확장) 6개를 --ctx 위에 더한다 — 25회차 후보")
     ap.add_argument("--center", type=float, default=None,
                     help="이미 푼 클린 아핀 center 를 재사용한다")
     ap.add_argument("--skip-eval", action="store_true",
@@ -167,12 +169,17 @@ def main():
                          "반드시 앞선 실행의 출력에서 그대로 가져와야 한다")
     a = ap.parse_args()
     assert not (a.form and a.ctx), "한 번에 하나만 바꾼다"
+    assert not (a.lvl and not a.ctx), "--lvl 은 --ctx 위에 얹는다"
     acols = (sc.ASOF_COLS + (sc.FORM_COLS if a.form else [])
-             + (sc.CTX_COLS if a.ctx else []))
+             + (sc.CTX_COLS if a.ctx else [])
+             + (sc.LVL_COLS if a.lvl else []))
     a.acols = acols
     out_pkl, out_zip = (OUT_PKL, OUT_ZIP)
     if a.form:
         out_pkl, out_zip = OUT_PKL_F, OUT_ZIP_F
+    elif a.lvl:
+        out_pkl = os.path.join(ROOT, "model_cand", "cat_asof_xl.pkl")
+        out_zip = os.path.join(ROOT, "submissions", "cand_asof_xl.zip")
     elif a.ctx:
         out_pkl, out_zip = OUT_PKL_X, OUT_ZIP_X
 
@@ -230,6 +237,7 @@ def main():
         look(*nested_dev(p[m_tr], c[m_tr], y[m_tr], k), c[m_va])
         for (p, c), k in zip(AX, KSH)]) @ WPOST
     drop = (sc.FORM_COLS if a.form else
+            sc.LVL_COLS if a.lvl else
             sc.CTX_COLS if a.ctx else sc.ASOF_COLS)
     base_f = [c for c in features if c not in drop]
     ref = f"대조 {len(base_f)}p" + (" (D=22회차)" if a.form else "")
@@ -272,10 +280,10 @@ def main():
     print(f"  alpha={ALPHA:.6f}   center={center:.6f}")
     # 기준선 — --form 은 22회차 실측(1040.8656) 위에 곱한다. 22회차는 2024
     # 배수의 78~87% 가 평가셋으로 넘어왔으므로(17-i) 그 구간도 같이 찍는다.
-    b0 = 1040.8656 if (a.form or a.ctx) else 955.64
+    b0 = (1044.7656 if a.lvl else 1040.8656 if (a.form or a.ctx) else 955.64)
     g = r1 / r0 - 1.0
     print(f"  기대 LB  {b0:.4f} x {r1/r0:.4f} = **{b0*(1+g):.1f}**")
-    if a.form or a.ctx:
+    if a.form or a.ctx or a.lvl:
         print(f"  전이 78~87% 가정  {b0*(1+g*0.78):.1f} ~ {b0*(1+g*0.87):.1f}")
     if not a.build:
         print("\n(--build 를 주면 pkl/zip 을 만든다)")

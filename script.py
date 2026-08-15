@@ -169,6 +169,14 @@ CTX_MUL = [("adv", "카운트 우위 (strikes > balls)"),
            ("bs", "볼 - 스트라이크")]
 CTX_COLS = [f"dx_{lb}_{tag}" for lb in ("succ", "mid") for tag, _ in CTX_MUL]
 
+# 수준 확장 (H1). X 는 cur_succ / cur_mid 두 수준에만 맥락을 곱했다. 투수의
+# 볼 비율 · 반대투구 비율 · 스트라이크 비율에도 같은 국면 의존성이 있다 —
+# 상대 손과 카운트 국면에 따라 다르게 읽혀야 하는 값들이다.
+# 곱하는 맥락은 2024 기여가 가장 컸던 둘만 쓴다 (같은손 +9.6, 볼-스트라이크 +7.0).
+LVL_RATES = ("ball", "rev", "str")
+LVL_MUL = ("sh", "bs")
+LVL_COLS = [f"lx_{r}_{t}" for r in LVL_RATES for t in LVL_MUL]
+
 
 def attach_asof_state(df, bundle):
     """AS-OF 분해 — 통산 누적에서 **현재 시즌 상태**를 복원한다.
@@ -231,6 +239,9 @@ def attach_asof_state(df, bundle):
     for lb in ("succ", "mid"):
         for tag, _ in CTX_MUL:
             df[f"dx_{lb}_{tag}"] = df[f"cur_{lb}"] * mul[tag]
+    for r in LVL_RATES:
+        for t in LVL_MUL:
+            df[f"lx_{r}_{t}"] = df[f"cur_{r}"] * mul[t]
     return df
 
 

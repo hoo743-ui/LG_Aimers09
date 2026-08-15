@@ -219,7 +219,25 @@ def main():
     bs = C("balls_before") - C("strikes_before")
     CTX = F32([S0["cur_succ"] * v for v in (adv, onb, same, bs)]
               + [S0["cur_mid"] * v for v in (adv, onb, same, bs)])
+    S0v = {k: S0[k] for k in
+           (["cur_n_asof_pitcher_n"] + [f"cur_{r}" for r in
+            ("succ", "mid", "ball", "rev", "str")])}
     del S0
+    # 열 순서 = [succ x (adv,onb,sh,bs), mid x (adv,onb,sh,bs)]
+    # X 는 실제 LB 에서 +3.90 을 냈다. 어느 성분이 그 일을 하는지 leave-one-out
+    # 으로 본다 (지시 9 — X 전체를 다시 찾지 않는다).
+    KEEP = {"adv": (0, 4), "onb": (1, 5), "sh": (2, 6), "bs": (3, 7)}
+    drop = lambda pair: CTX[:, [j for j in range(8) if j not in pair]]
+
+    # STEP 7 — 신뢰도 게이팅. 모델은 cur_rate 와 log1p(cur_n) 을 **따로** 본다.
+    # 트리는 두 열의 곱을 축평행 분할로 못 만드니 명시적으로 준다. 곱하는 쪽만
+    # 다르고 재료는 D 와 같아서 새 정보가 아니라 **표현**의 문제다.
+    PR = ("succ", "mid", "ball", "rev", "str")
+    cn = S0v["cur_n_asof_pitcher_n"]
+    G = {"G1 n/(n+500)": cn / (cn + 500.0),
+         "G2 sqrt": np.sqrt(cn) / (np.sqrt(cn) + np.sqrt(500.0)),
+         "G3 log1p": np.log1p(cn)}
+    gate = {k: F32([S0v[f"cur_{r}"] * w for r in PR]) for k, w in G.items()}
 
     H = lambda *b: np.hstack(b)
     ADD = {"C0 Champion(D)": D,
@@ -231,7 +249,32 @@ def main():
            # --- 후속 (--only 로만) ---
            "S150 축소k150": H(D, S150),
            "S500R 축소교체": S500R,
-           "XS 맥락+축소": H(D, CTX, S500)}
+           "XS 맥락+축소": H(D, CTX, S500),
+           # --- STEP 6: X 성분 marginal (--only 로만) ---
+           "XM-adv 카운트빼기": H(D, drop(KEEP["adv"])),
+           "XM-onb 주자빼기": H(D, drop(KEEP["onb"])),
+           "XM-sh 같은손빼기": H(D, drop(KEEP["sh"])),
+           "XM-bs 볼스빼기": H(D, drop(KEEP["bs"])),
+           "XM-succ만": H(D, CTX[:, :4]),
+           "XM-mid만": H(D, CTX[:, 4:]),
+           # --- STEP 7: 신뢰도 게이팅 (전부 현 Champion = D+CTX 위) ---
+           "G1 게이트 n/(n+500)": H(D, CTX, gate["G1 n/(n+500)"]),
+           "G2 게이트 sqrt": H(D, CTX, gate["G2 sqrt"]),
+           "G3 게이트 log1p": H(D, CTX, gate["G3 log1p"]),
+           # --- STEP 8: 22-f 의 예측 시험. 강한 축(같은손/볼-스트라이크)에
+           #     이산 전환을 더 준다. 매끄러운 곱은 22-e 에서 이미 죽었다.
+           "H1 수준확장": H(D, CTX, F32(
+               [S0v[f"cur_{r}"] * v for r in ("ball", "rev", "str")
+                for v in (same, bs)])),
+           "H2 카운트세분": H(D, CTX, F32(
+               [S0v[f"cur_{r}"] * v for r in ("succ", "mid")
+                for v in (C("balls_before"), C("strikes_before"),
+                          (C("strikes_before") == 2).astype(np.float64))])),
+           # H1 의 완성형 — 세 수준 x 네 맥락 12열. H1 이 6열로 2024 +15.3 을
+           # 냈으니 방향이 맞다면 여기서 더 커져야 한다 (22-h).
+           "H3 3수준x4맥락": H(D, CTX, F32(
+               [S0v[f"cur_{r}"] * v for r in ("ball", "rev", "str")
+                for v in (adv, onb, same, bs)]))}
     if ONLY:
         keep = ONLY.split(",")
         ADD = {k: v for k, v in ADD.items() if any(s in k for s in keep)}

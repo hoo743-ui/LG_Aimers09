@@ -47,8 +47,13 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CACHE = os.path.join(ROOT, "exp", "cache")
 FOLDS = (2022, 2023, 2024)
 SEEDS = (42, 43)
-PRED = os.path.join(ROOT, "exp", "champ_oof.npz")
-OUT = os.path.join(ROOT, "exp", "post_reopt.json")
+# --ctx : 현 Champion(24회차, 1044.7656)은 X 8개를 포함한 76p 다. 68p 로 재면
+# 다른 모델 위에서 가중을 고르는 셈이라 측정이 무효다.
+CTX = "--ctx" in sys.argv
+PRED = os.path.join(ROOT, "exp",
+                    "champ_oof_x.npz" if CTX else "champ_oof.npz")
+OUT = os.path.join(ROOT, "exp",
+                   "post_reopt_x.json" if CTX else "post_reopt.json")
 
 LBLS = [lb for _, _, lb in RATE_COLS]
 NCOLS = ("asof_pitcher_n", "asof_batter_n", "asof_pitcher_pitchmix_n")
@@ -70,22 +75,30 @@ def rho2(p, y):
     return 1e5 * np.corrcoef(p, y)[0, 1] ** 2
 
 
+BAND = 0.40          # 각 축을 현행 가중의 ±40% 안에서만 움직인다
+
+
 def optimize(p0, dev, y, w_init, rounds=4):
-    """좌표하강. 축마다 격자를 훑고 최선을 취한다 (자유도 4개뿐)."""
+    """좌표하강. 축마다 격자를 훑고 최선을 취한다 (자유도 4개뿐).
+
+    **범위를 현행 가중의 ±40% 로 묶는다.** 이전 실행에서 열린 격자(0~2.0)를 주자
+    2023 이 `[2, 2, 2, 2]` 로 상단에 붙었고 그 가중을 2024 에 쓰면 −138 이었다.
+    퇴화 폴드가 격자 끝으로 달아나는 것을 구조적으로 막는다.
+    """
     w = np.array(w_init, dtype=float)
-    grid = np.concatenate([np.arange(0.0, 1.51, 0.05), [1.6, 1.8, 2.0]])
+    grids = [np.linspace(v * (1 - BAND), v * (1 + BAND), 17) for v in w_init]
     best = rho2(p0 + dev @ w, y)
     for _ in range(rounds):
         moved = False
         for j in range(len(w)):
             cur = w[j]
             vals = []
-            for g in grid:
+            for g in grids[j]:
                 w[j] = g
                 vals.append(rho2(p0 + dev @ w, y))
             k = int(np.argmax(vals))
             if vals[k] > best + 1e-9:
-                best, w[j], moved = vals[k], grid[k], True
+                best, w[j], moved = vals[k], grids[j][k], True
             else:
                 w[j] = cur
         if not moved:
@@ -105,9 +118,17 @@ def main():
     S = build_state(C, C("pitcher_id").astype(np.int64),
                     C("batter_id").astype(np.int64), season)
     L = lambda a: np.log1p(np.clip(a, 0, None)).astype(np.float32)
-    D = np.column_stack([S[f"cur_{lb}"] for lb in LBLS]
-                        + [L(S[f"cur_n_{n}"]) for n in NCOLS]).astype(np.float32)
-    del S
+    cols = [S[f"cur_{lb}"] for lb in LBLS] + [L(S[f"cur_n_{n}"]) for n in NCOLS]
+    if CTX:
+        # `script.py` 의 CTX_COLS 와 같은 정의 — cur_{succ,mid} x 상황 4종
+        adv = (C("strikes_before") > C("balls_before")).astype(np.float64)
+        onb = (C("num_runners_on") > 0).astype(np.float64)
+        same = (C("pitcher_hand") == C("batter_hand")).astype(np.float64)
+        bs = C("balls_before") - C("strikes_before")
+        cols += [S["cur_succ"] * v for v in (adv, onb, same, bs)]
+        cols += [S["cur_mid"] * v for v in (adv, onb, same, bs)]
+    D = np.column_stack(cols).astype(np.float32)
+    del S, cols
     M = np.hstack([np.column_stack([np.asarray(X[:, ixc[c]], dtype=np.float32)
                                     for c in prod]), D])
     print(f"Champion 피처 {M.shape[1]}p", flush=True)
@@ -157,8 +178,9 @@ def main():
     print(f"{'평가폴드':<10}{'가중 출처':<14}{'현행':>10}{'재최적':>10}{'증분':>10}")
     inc = []
     for i, f in enumerate(FOLDS[1:], start=1):
-        src = FOLDS[:i]
-        # 이전 폴드들의 최적 가중 평균 (한 폴드에 과적합되지 않게)
+        # **가중 출처는 건강한 폴드만.** 2023 은 Champion rho^2 가 2022 의 1/14 인
+        # 퇴화 폴드이고, 그 in-fold 최적을 2024 에 쓰면 -138 이었다 (지시 7).
+        src = tuple(s for s in FOLDS[:i] if s != 2023) or FOLDS[:i]
         w = np.mean([WOPT[s] for s in src], axis=0)
         yv = y[season == f]
         r_cur = rho2(P[f] + DEV[f] @ WPOST, yv)
