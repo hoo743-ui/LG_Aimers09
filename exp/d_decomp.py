@@ -219,9 +219,11 @@ def main():
     bs = C("balls_before") - C("strikes_before")
     CTX = F32([S0["cur_succ"] * v for v in (adv, onb, same, bs)]
               + [S0["cur_mid"] * v for v in (adv, onb, same, bs)])
+    RT = ("succ", "mid", "ball", "rev", "str")
     S0v = {k: S0[k] for k in
-           (["cur_n_asof_pitcher_n"] + [f"cur_{r}" for r in
-            ("succ", "mid", "ball", "rev", "str")])}
+           (["cur_n_asof_pitcher_n"]
+            + [f"cur_{r}" for r in RT] + [f"prior_{r}" for r in RT]
+            + [f"cur_ev_{r}" for r in RT] + ["cur_bsucc", "cur_bmid"])}
     del S0
     # 열 순서 = [succ x (adv,onb,sh,bs), mid x (adv,onb,sh,bs)]
     # X 는 실제 LB 에서 +3.90 을 냈다. 어느 성분이 그 일을 하는지 leave-one-out
@@ -239,7 +241,80 @@ def main():
          "G3 log1p": np.log1p(cn)}
     gate = {k: F32([S0v[f"cur_{r}"] * w for r in PR]) for k, w in G.items()}
 
+    def eb_shrunk(r, parent_kind):
+        """경험적 베이즈 재추정 — `k` 를 **데이터에서** 뽑는다 (고정 500 아님).
+
+        시즌 g 행의 `k` 와 부모는 **시즌 <g** 로만 만든다 (워크포워드).
+        적률 매칭:  k = mu(1-mu) / sigma^2_between,
+                    sigma^2_between = Var(cur_rate) - E[mu(1-mu)/n]
+
+        parent_kind = "prior"  선수 개인 이력 (20-c 의 S500R 과 같은 부모)
+                    = "hand"   투수손 조건부 평균 (그 부모는 아직 안 재봤다)
+        """
+        cn = S0v["cur_n_asof_pitcher_n"]
+        ev = np.nan_to_num(S0v[f"cur_ev_{r}"])
+        rate = S0v[f"cur_{r}"]
+        ph = C("pitcher_hand")
+        out = np.full(len(season), np.nan)
+        for g in sorted(np.unique(season)):
+            m, pr = season == g, season < g
+            src = pr if pr.any() else m          # 첫 시즌은 자기 자신뿐
+            ok = src & (cn > 0) & ~np.isnan(rate)
+            if not ok.any():
+                continue
+            mu = float(ev[ok].sum() / max(cn[ok].sum(), 1))
+            v_tot = float(np.average((rate[ok] - mu) ** 2, weights=cn[ok]))
+            v_bin = float(np.average(mu * (1 - mu) / np.maximum(cn[ok], 1),
+                                     weights=cn[ok]))
+            v_bet = max(v_tot - v_bin, 1e-8)
+            k = mu * (1 - mu) / v_bet
+            if parent_kind == "prior":
+                par = np.where(np.isnan(S0v[f"prior_{r}"]), mu, S0v[f"prior_{r}"])
+            else:
+                par = np.full(len(season), mu)
+                for h in np.unique(ph[ok]):
+                    sel = ok & (ph == h)
+                    if sel.sum() > 100:
+                        par[ph == h] = float(ev[sel].sum()
+                                             / max(cn[sel].sum(), 1))
+            out[m] = (ev[m] + k * par[m]) / (cn[m] + k)
+        return out
+
+    def swapD(parent_kind):
+        """D 의 앞 5열(투수 비율)만 EB 재추정본으로 갈아끼운다.
+
+        D 열 순서 = [cur_{succ,mid,ball,rev,str,fb,bb,os,bsucc,bmid}] + logn 3.
+        나머지 열과 CTX/LVL 은 **원시값 그대로** 두어 변경을 하나로 묶는다.
+        """
+        Dn = D.copy()
+        for i, r in enumerate(RT):
+            Dn[:, i] = eb_shrunk(r, parent_kind).astype(np.float32)
+        return Dn
+
+    # 상황 난이도 기준선 — 이산 셀 평균, 워크포워드
+    cell = ((C("balls_before").astype(np.int64) * 3
+             + C("strikes_before").astype(np.int64)) * 3
+            + C("outs_before").astype(np.int64)) * 4         + (C("num_runners_on") > 0).astype(np.int64) * 2         + (C("pitcher_hand") == C("batter_hand")).astype(np.int64)
+    base_ctx = np.zeros(len(season))
+    for g in sorted(np.unique(season)):
+        m, pr = season == g, season < g
+        src = pr if pr.any() else m
+        u, inv = np.unique(cell[src], return_inverse=True)
+        sums = np.bincount(inv, weights=y[src], minlength=len(u))
+        cnts = np.bincount(inv, minlength=len(u))
+        gm = float(y[src].mean())
+        tab = np.where(cnts >= 50, sums / np.maximum(cnts, 1), gm)
+        ix = np.searchsorted(u, cell[m])
+        ix = np.clip(ix, 0, len(u) - 1)
+        ok = u[ix] == cell[m]
+        base_ctx[m] = np.where(ok, tab[ix], gm)
+    print(f"  상황 셀 {len(np.unique(cell))}개  base 범위 "
+          f"{base_ctx.min():.4f}~{base_ctx.max():.4f}", flush=True)
+
     H = lambda *b: np.hstack(b)
+    # 현 Champion(25회차 1049.9226)의 수준확장 6열
+    LVL = F32([S0v[f"cur_{r}"] * v for r in ("ball", "rev", "str")
+               for v in (same, bs)])
     ADD = {"C0 Champion(D)": D,
            "W2 2시즌창": H(D, win["W2"]),
            "W3 3시즌창": H(D, win["W3"]),
@@ -274,7 +349,87 @@ def main():
            # 냈으니 방향이 맞다면 여기서 더 커져야 한다 (22-h).
            "H3 3수준x4맥락": H(D, CTX, F32(
                [S0v[f"cur_{r}"] * v for r in ("ball", "rev", "str")
-                for v in (adv, onb, same, bs)]))}
+                for v in (adv, onb, same, bs)])),
+           # ===== 25회차 이후: 기준선이 Champion 82p (D + CTX + LVL) =====
+           "C1 Champion82": H(D, CTX, LVL),
+           # A — 현재 수준과 개인 baseline 의 **차이**가 상황별로 다른가.
+           #     gap 자체는 18 에서 주효과로 기각(E, min 0.9679)됐다.
+           #     여기서 묻는 것은 gap x 맥락이 Champion 위에 더해지는가다.
+           "A gap×맥락": H(D, CTX, LVL, F32(
+               [(S0v[f"cur_{r}"] - S0v[f"prior_{r}"]) * v
+                for r in RT for v in (same, bs)])),
+           # B2 — X/H1 은 **투수** 수준에만 맥락을 곱했다. D 가 복원한 **타자**
+           #     수준에는 곱한 적이 없다 (18-d 는 주효과만 봤다).
+           "B2 타자×맥락": H(D, CTX, LVL, F32(
+               [S0v[f"cur_{r}"] * v for r in ("bsucc", "bmid")
+                for v in (adv, onb, same, bs)])),
+           "C 결합": H(D, CTX, LVL, F32(
+               [(S0v[f"cur_{r}"] - S0v[f"prior_{r}"]) * v
+                for r in RT for v in (same, bs)]
+               + [S0v[f"cur_{r}"] * v for r in ("bsucc", "bmid")
+                  for v in (adv, onb, same, bs)])),
+           # ===== 대형 독립축 (P1~P4). 전부 Champion 82p 위 =====
+           # P1 — D 가 복원한 투수 현재상태 x 타자 현재상태. raw id 상호작용이
+           #      아니라 **복원된 수준끼리**의 결합이다. MF/FM 기각(6-c, 6-p)은
+           #      잠재인자 얘기였고 이건 관측 가능한 값의 곱이다.
+           "P1 투수x타자상태": H(D, CTX, LVL, F32([
+               S0v["cur_succ"] * S0v["cur_bsucc"],
+               S0v["cur_mid"] * S0v["cur_bmid"],
+               S0v["cur_succ"] * S0v["cur_bmid"],
+               S0v["cur_mid"] * S0v["cur_bsucc"],
+               S0v["cur_succ"] - S0v["cur_bsucc"],
+               S0v["cur_mid"] - S0v["cur_bmid"],
+               S0v["cur_bsucc"] * (C("pitcher_hand") == 1).astype(np.float64),
+               S0v["cur_bmid"] * (C("pitcher_hand") == 1).astype(np.float64)])),
+           # P2 — 수준의 **크기**가 아니라 **구성(shape)** 이 상황별로 다른가
+           "P2 상태프로파일": H(D, CTX, LVL, F32(
+               [S0v["cur_succ"] - S0v["cur_mid"],
+                S0v["cur_str"] - S0v["cur_ball"],
+                S0v["cur_rev"] - S0v["cur_succ"]]
+               + [(a_ - b_) * v
+                  for a_, b_ in ((S0v["cur_succ"], S0v["cur_mid"]),
+                                 (S0v["cur_str"], S0v["cur_ball"]),
+                                 (S0v["cur_rev"], S0v["cur_succ"]))
+                  for v in (same, bs)])),
+           # P3 — 두 상태 벡터의 관계. 트리가 못 만드는 형태만 closed-form 으로
+           "P3 상태기하": H(D, CTX, LVL, F32([
+               np.abs(S0v["cur_succ"] - S0v["cur_bsucc"])
+               + np.abs(S0v["cur_mid"] - S0v["cur_bmid"]),
+               np.sqrt((S0v["cur_succ"] - S0v["cur_bsucc"]) ** 2
+                       + (S0v["cur_mid"] - S0v["cur_bmid"]) ** 2),
+               (S0v["cur_succ"] * S0v["cur_bsucc"]
+                + S0v["cur_mid"] * S0v["cur_bmid"])
+               / np.sqrt((S0v["cur_succ"] ** 2 + S0v["cur_mid"] ** 2)
+                         * (S0v["cur_bsucc"] ** 2 + S0v["cur_bmid"] ** 2) + 1e-9),
+               np.sign(S0v["cur_succ"] - S0v["cur_bsucc"])
+               + np.sign(S0v["cur_mid"] - S0v["cur_bmid"])])),
+           # P4 — 현재가 개인 baseline 의 **어디에** 있는가. F 의 recent-season
+           #      단순 차분이 아니라 비율/방향/크기 + 상호작용이다.
+           # ===== HB — current state 추정량 자체를 재추정 (교체/추가) =====
+           # 20-c 의 S500R(고정 k=500, 부모=prior, 교체)은 min 0.5633 로 참사였다.
+           # 여기서 바뀌는 것은 **k 를 데이터에서 뽑는다**는 것과 **부모 선택**이다.
+           "HB-eb 교체(prior부모)": H(swapD("prior"), CTX, LVL),
+           "HB-hand 교체(손부모)": H(swapD("hand"), CTX, LVL),
+           # TG-5 — 능력이 그 상황의 요구 수준을 얼마나 초과/미달하는가.
+           #   base(context) = E[y | 볼,스트라이크,아웃,주자유무,같은손]
+           #   시즌 g 셀 평균은 **시즌 <g 행으로만** 만든다 (워크포워드).
+           #   margin 은 차항이라 트리가 직접 못 만들고, 22-f 대로 이산 전환과
+           #   곱한 형태도 같이 준다.
+           "TG5 margin": H(D, CTX, LVL, F32(
+               [S0v["cur_succ"] - base_ctx]
+               + [(S0v["cur_succ"] - base_ctx) * v
+                  for v in (same, bs, adv, onb)])),
+           "HB-add 추가": H(D, CTX, LVL,
+                          F32([eb_shrunk(r, "prior") for r in RT])),
+           "P4 상태전이": H(D, CTX, LVL, F32([
+               S0v["cur_succ"] / (S0v["prior_succ"] + 1e-6),
+               S0v["cur_mid"] / (S0v["prior_mid"] + 1e-6),
+               np.sign(S0v["cur_succ"] - S0v["prior_succ"]),
+               np.sign(S0v["cur_mid"] - S0v["prior_mid"]),
+               np.abs(S0v["cur_succ"] - S0v["prior_succ"]) * S0v["cur_succ"],
+               np.abs(S0v["cur_mid"] - S0v["prior_mid"]) * S0v["cur_mid"]]
+               + [(S0v["cur_succ"] / (S0v["prior_succ"] + 1e-6)) * v
+                  for v in (same, bs)]))}
     if ONLY:
         keep = ONLY.split(",")
         ADD = {k: v for k, v in ADD.items() if any(s in k for s in keep)}
