@@ -312,6 +312,8 @@ def main():
           f"{base_ctx.min():.4f}~{base_ctx.max():.4f}", flush=True)
 
     H = lambda *b: np.hstack(b)
+    # EB 축소열은 한 번만 만들어 재사용한다 (5개 x 시즌 루프라 비싸다)
+    EBC = {r: eb_shrunk(r, "prior") for r in RT}
     # 현 Champion(25회차 1049.9226)의 수준확장 6열
     LVL = F32([S0v[f"cur_{r}"] * v for r in ("ball", "rev", "str")
                for v in (same, bs)])
@@ -419,8 +421,12 @@ def main():
                [S0v["cur_succ"] - base_ctx]
                + [(S0v["cur_succ"] - base_ctx) * v
                   for v in (same, bs, adv, onb)])),
-           "HB-add 추가": H(D, CTX, LVL,
-                          F32([eb_shrunk(r, "prior") for r in RT])),
+           "HB-add 추가": H(D, CTX, LVL, F32([EBC[r] for r in RT])),
+           # HB-add 의 5축 leave-one-out. 기여 = HB-add − (그 축 뺀 판).
+           # 새 shrinkage 파라미터도 새 family 도 만들지 않는다.
+           **{f"EBM-{x} 뺀판": H(D, CTX, LVL,
+                               F32([EBC[r] for r in RT if r != x]))
+              for x in RT},
            "P4 상태전이": H(D, CTX, LVL, F32([
                S0v["cur_succ"] / (S0v["prior_succ"] + 1e-6),
                S0v["cur_mid"] / (S0v["prior_mid"] + 1e-6),

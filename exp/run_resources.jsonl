@@ -1,0 +1,8 @@
+{"config": "champ", "fold": 2022, "wall_s": 198, "cpu_s": 1940, "rows": 728588, "features": 82, "seeds": [42, 43], "threads": 12, "free_gb_after": 5.8}
+{"config": "champ_noL", "fold": 2022, "wall_s": 182, "cpu_s": 1933, "rows": 728588, "features": 76, "seeds": [42, 43], "threads": 12, "free_gb_after": 5.9}
+{"config": "champ_noX", "fold": 2022, "wall_s": 177, "cpu_s": 1827, "rows": 728588, "features": 68, "seeds": [42, 43], "threads": 12, "free_gb_after": 5.9}
+{"config": "champ_ebsucc", "fold": 2022, "wall_s": 193, "cpu_s": 1994, "rows": 728588, "features": 83, "seeds": [42, 43], "threads": 12, "free_gb_after": 5.5}
+{"config": "champ", "fold": 2023, "wall_s": 252, "cpu_s": 2632, "rows": 976060, "features": 82, "seeds": [42, 43], "threads": 12, "free_gb_after": 5.3}
+{"config": "champ_noL", "fold": 2023, "wall_s": 241, "cpu_s": 2548, "rows": 976060, "features": 76, "seeds": [42, 43], "threads": 12, "free_gb_after": 5.0}
+{"config": "champ_noX", "fold": 2023, "wall_s": 236, "cpu_s": 2403, "rows": 976060, "features": 68, "seeds": [42, 43], "threads": 12, "free_gb_after": 5.7}
+{"config": "champ_ebsucc", "fold": 2023, "wall_s": 249, "cpu_s": 2657, "rows": 976060, "features": 83, "seeds": [42, 43], "threads": 12, "free_gb_after": 5.6}
