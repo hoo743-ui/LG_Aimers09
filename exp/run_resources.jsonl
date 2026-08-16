@@ -54,3 +54,13 @@
 {"config": "champ_trend", "fold": 2022, "wall_s": 193, "cpu_s": 2059, "rows": 728588, "features": 87, "seeds": [42, 43], "threads": 12, "free_gb_after": 5.6}
 {"config": "champ_trend", "fold": 2023, "wall_s": 249, "cpu_s": 2759, "rows": 976060, "features": 87, "seeds": [42, 43], "threads": 12, "free_gb_after": 5.6}
 {"config": "champ_trend", "fold": 2024, "wall_s": 320, "cpu_s": 3413, "rows": 1221585, "features": 87, "seeds": [42, 43], "threads": 12, "free_gb_after": 5.5}
+{"config": "base82_d6_b32", "fold": 2024, "wall_s": 302, "cpu_s": 3317, "rows": 1221585, "features": 82, "seeds": [42, 43], "threads": 12, "free_gb_after": 5.3}
+{"config": "base82_d6_b128", "fold": 2024, "wall_s": 305, "cpu_s": 3343, "rows": 1221585, "features": 82, "seeds": [42, 43], "threads": 12, "free_gb_after": 5.3}
+{"config": "base82_d8_b32", "fold": 2024, "wall_s": 373, "cpu_s": 4119, "rows": 1221585, "features": 82, "seeds": [42, 43], "threads": 12, "free_gb_after": 5.7}
+{"config": "base82_d8_b128", "fold": 2024, "wall_s": 393, "cpu_s": 4206, "rows": 1221585, "features": 82, "seeds": [42, 43], "threads": 12, "free_gb_after": 5.3}
+{"config": "champ_risk_add", "fold": 2022, "wall_s": 193, "cpu_s": 2016, "rows": 728588, "features": 83, "seeds": [42, 43], "threads": 12, "free_gb_after": 5.3}
+{"config": "champ_risk_rep", "fold": 2022, "wall_s": 182, "cpu_s": 2025, "rows": 728588, "features": 80, "seeds": [42, 43], "threads": 12, "free_gb_after": 5.4}
+{"config": "champ_risk_add", "fold": 2023, "wall_s": 243, "cpu_s": 2697, "rows": 976060, "features": 83, "seeds": [42, 43], "threads": 12, "free_gb_after": 5.7}
+{"config": "champ_risk_rep", "fold": 2023, "wall_s": 241, "cpu_s": 2666, "rows": 976060, "features": 80, "seeds": [42, 43], "threads": 12, "free_gb_after": 5.6}
+{"config": "champ_risk_add", "fold": 2024, "wall_s": 304, "cpu_s": 3350, "rows": 1221585, "features": 83, "seeds": [42, 43], "threads": 12, "free_gb_after": 5.5}
+{"config": "champ_risk_rep", "fold": 2024, "wall_s": 300, "cpu_s": 3310, "rows": 1221585, "features": 80, "seeds": [42, 43], "threads": 12, "free_gb_after": 5.7}

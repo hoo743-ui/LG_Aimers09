@@ -86,6 +86,15 @@ CONFIGS = {
     # champ 과 같은 구성. --only 가 부분문자열이라 "champ" 으로 거르면 전부
     # 걸리므로, 기준선만 따로 부를 때 쓰는 별칭이다.
     "base82": ["D", "CTX", "LVL"],
+    # RISK — 정보 추가가 아니라 **압축**이다. cur_{mid,ball,rev} 세 실패 유형을
+    # 학습 구간에서 추정한 가중으로 1열로 합친다.
+    #   WHY NEW : 지금까지는 항상 열을 **늘렸다**. 처음으로 줄인다.
+    #   근거    : 27 에서 depth 8 이 -5.4 였다. 병목은 표현력이 아니라 표본
+    #             효율이고, 정보를 여러 열에 흩으면 트리가 조합을 찾느라
+    #             표본을 소모한다. 미리 합치면 그 비용이 사라진다.
+    #   모든 행에 값이 있다 (K2 처럼 절반을 0 으로 끄지 않는다).
+    "champ_risk_add": ["D", "CTX", "LVL", "RISK"],       # 원시 유지 + 압축
+    "champ_risk_rep": ["Dm3", "CTX", "LVL", "RISK"],     # 원시 3열을 압축으로 대체
     # TREND — prev{1,3,5} 의 시간 구조. **대수 감사 후 남은 것만** 넣는다.
     #   제외: prev1/3/5 level (이미 원시 6열), prev1-prev3 (= CAAFE cf_trend13),
     #         prev3-prev5 (= cf_trend35), prev1_mid-prev3_mid (= cf_midtrend13),
@@ -126,6 +135,12 @@ def main():
     # 균등 학습"이 최적인지 검증된 적이 없다. `asof_prior` 상수는 바꾸지 않는다
     # (선수 이력은 길수록 정확하고, 학습 행 선택과는 별개 문제다).
     tfrom = int(argv("--train-from", "0"))
+    # --depth / --border : 모델 용량 재탐색. 현행 6/32 는 **55피처 pre-D 시절**에
+    # 튜닝된 값이고 82피처에서 재검토된 적이 없다. X/H1 을 만든 근거가
+    # "depth 6 트리는 두 열의 곱을 못 만든다" 였는데 깊이를 안 올려봤다.
+    # border_count 32 는 기본값 254 의 1/8 — 연속 cur_* 를 32구간으로만 쪼갠다.
+    dep = int(argv("--depth", "0"))
+    bor = int(argv("--border", "0"))
     names = [n for n in CONFIGS if not only or any(t in n for t in only.split(","))]
     if "--list" in sys.argv or not names:
         print("후보:", ", ".join(CONFIGS))
@@ -292,7 +307,44 @@ def main():
                     t13 * m["bs"],
                     m3 - m5])                 # CAAFE 에 없는 유일한 차분
 
+    RISK_SRC = ("mid", "ball", "rev")
+
+    def build_RISK():
+        """세 실패 유형을 학습 구간 추정 가중으로 1열 압축.
+
+        시즌 g 의 가중은 **시즌 <g** 행으로만 추정한다 (워크포워드).
+        검증 폴드의 타깃은 보지 않는다.
+        """
+        s0 = S0()
+        F = np.column_stack([s0[f"cur_{r}"] for r in RISK_SRC])
+        out = np.full(len(season), np.nan)
+        for g in sorted(np.unique(season)):
+            m = season == g
+            pr = season < g
+            src = pr if pr.any() else m       # 첫 시즌은 자기 자신뿐
+            ok = src & np.isfinite(F).all(1)
+            if ok.sum() < 10000:
+                continue
+            A = np.hstack([F[ok], np.ones((ok.sum(), 1))])
+            w, *_ = np.linalg.lstsq(A, y[ok], rcond=None)
+            mm = m & np.isfinite(F).all(1)
+            out[mm] = F[mm] @ w[:-1] + w[-1]
+            if g in (2022, 2024):
+                print(f"    {g}  w = " + ", ".join(
+                    f"{r}:{v:+.3f}" for r, v in zip(RISK_SRC, w[:-1])),
+                    flush=True)
+        return out.astype(np.float32).reshape(-1, 1)
+
+    def build_Dm3():
+        """D 에서 cur_{mid,ball,rev} 세 열을 뺀 10열."""
+        keep = [i for i, lb in enumerate(LBLS) if lb not in RISK_SRC]
+        s0 = S0()
+        return F32([s0[f"cur_{LBLS[i]}"] for i in keep]
+                   + [L(s0[f"cur_n_{n}"]) for n in NCOLS])
+
     BUILD = {"D": ("asof13_v1", build_D),
+             "RISK": ("risk_mbr_wf_v1", build_RISK),
+             "Dm3": ("asof10_drop_mbr_v1", build_Dm3),
              "CTX": ("dx8_v1", build_CTX),
              "LVL": ("lx6_v1", build_LVL),
              "EBsucc": ("ebsucc_prior_v1", build_EBsucc),
@@ -321,6 +373,14 @@ def main():
         print("여유 RAM 2GB 미만 — 학습을 시작하지 않는다 (8번 지시)")
         return
     hp = {**HP, "thread_count": nthr}
+    tag = ""
+    if dep:
+        hp["depth"] = dep; tag += f"_d{dep}"
+    if bor:
+        hp["border_count"] = bor; tag += f"_b{bor}"
+    if tag:
+        print(f"용량 변경 depth={hp['depth']} border={hp['border_count']}",
+              flush=True)
     print(f"스레드 {nthr}  여유 RAM {free_gb():.1f}GB", flush=True)
 
     R = {}
@@ -335,7 +395,7 @@ def main():
         print(f"\n=== 폴드 {f}  학습 {int(tr.sum()):,}행"
               + (f"  (>= {tfrom})" if tfrom else "") + " ===", flush=True)
         for n in names:
-            n_key = f"{n}@{tfrom}" if tfrom else n
+            n_key = (f"{n}@{tfrom}" if tfrom else n) + tag
             if f in R.get(n_key, {}):
                 print(f"  {n_key:<18}(캐시) {R[n_key][f]['rho2']:>9.1f}", flush=True)
                 continue
