@@ -135,6 +135,30 @@ def prior_tables(df, mask):
     return out
 
 
+def eb_params(df, mask, cols):
+    """적률법으로 `k` 를 뽑는다 — `k = mu(1-mu)/sigma^2_between`.
+
+    `mask` 구간의 행만 쓴다 (학습 시점 규율). 고정 500 이 아니라 데이터가
+    정하게 한다. `mu` 는 신인(이력 없음) 부모로도 쓰인다.
+    """
+    out = {"k": {}, "mu": {}}
+    cn = df.loc[mask, "cur_logn_pitch"].to_numpy(np.float64)
+    cn = np.expm1(cn)                       # log1p 를 되돌린다
+    for lb in cols:
+        r = df.loc[mask, f"cur_{lb}"].to_numpy(np.float64)
+        ok = (cn > 0) & np.isfinite(r)
+        if ok.sum() < 1000:
+            out["k"][lb], out["mu"][lb] = 500.0, 0.5
+            continue
+        w = cn[ok]
+        mu = float((r[ok] * w).sum() / w.sum())
+        v_tot = float(np.average((r[ok] - mu) ** 2, weights=w))
+        v_bin = float(np.average(mu * (1 - mu) / np.maximum(w, 1), weights=w))
+        out["k"][lb] = float(mu * (1 - mu) / max(v_tot - v_bin, 1e-8))
+        out["mu"][lb] = mu
+    return out
+
+
 def add_state(df, tabs):
     """`tabs` 를 임시 번들로 삼아 추론과 **같은 함수**로 파생컬럼을 만든다."""
     return sc.attach_asof_state(df, {"asof_prior": tabs})
@@ -161,6 +185,10 @@ def main():
                     help="X(D x 맥락) 8개를 더한다 — d_decomp 최유력")
     ap.add_argument("--lvl", action="store_true",
                     help="H1(수준확장) 6개를 --ctx 위에 더한다 — 25회차 후보")
+    ap.add_argument("--eb", action="store_true",
+                    help="EB 축소 5개를 --ctx --lvl 위에 더한다 (원시는 유지)")
+    ap.add_argument("--k2", action="store_true",
+                    help="K2(2스트라이크 국면) 4개를 --ctx --lvl 위에 더한다")
     ap.add_argument("--center", type=float, default=None,
                     help="이미 푼 클린 아핀 center 를 재사용한다")
     ap.add_argument("--skip-eval", action="store_true",
@@ -170,13 +198,24 @@ def main():
     a = ap.parse_args()
     assert not (a.form and a.ctx), "한 번에 하나만 바꾼다"
     assert not (a.lvl and not a.ctx), "--lvl 은 --ctx 위에 얹는다"
+    assert not (a.k2 and not a.lvl), "--k2 는 --lvl 위에 얹는다"
+    assert not (a.eb and not a.lvl), "--eb 는 --lvl 위에 얹는다"
+    assert not (a.eb and a.k2), "한 번에 하나만 바꾼다"
     acols = (sc.ASOF_COLS + (sc.FORM_COLS if a.form else [])
              + (sc.CTX_COLS if a.ctx else [])
-             + (sc.LVL_COLS if a.lvl else []))
+             + (sc.LVL_COLS if a.lvl else [])
+             + (sc.K2_COLS if a.k2 else [])
+             + (sc.EB_COLS if a.eb else []))
     a.acols = acols
     out_pkl, out_zip = (OUT_PKL, OUT_ZIP)
     if a.form:
         out_pkl, out_zip = OUT_PKL_F, OUT_ZIP_F
+    elif a.eb:
+        out_pkl = os.path.join(ROOT, "model_cand", "cat_asof_eb.pkl")
+        out_zip = os.path.join(ROOT, "submissions", "cand_asof_eb.zip")
+    elif a.k2:
+        out_pkl = os.path.join(ROOT, "model_cand", "cat_asof_k2.pkl")
+        out_zip = os.path.join(ROOT, "submissions", "cand_asof_k2.zip")
     elif a.lvl:
         out_pkl = os.path.join(ROOT, "model_cand", "cat_asof_xl.pkl")
         out_zip = os.path.join(ROOT, "submissions", "cand_asof_xl.zip")
@@ -203,12 +242,26 @@ def main():
     season = tr["season"].to_numpy()
     for c in acols:
         tr[c] = np.nan
+    ebp_final = None
     for g in sorted(np.unique(season)):
         m = season == g
         tabs = prior_tables(tr, season < g)
         part = add_state(tr.loc[m].copy(), tabs)
+        if a.eb:
+            # k 는 **시즌 <g** 로 뽑는다. 첫 시즌은 자기 자신뿐이라 그것을 쓴다.
+            src = (season < g) if (season < g).any() else m
+            base_part = add_state(tr.loc[src].copy(), prior_tables(tr, season < g))
+            ebp = eb_params(base_part, np.ones(len(base_part), bool), sc.EB_RATES)
+            part = sc.attach_asof_state(tr.loc[m].copy(),
+                                        {"asof_prior": tabs, "eb": ebp})
         for c in acols:
             tr.loc[m, c] = part[c].to_numpy()
+    if a.eb:
+        # 번들에 담을 k 는 **학습 전체**로 뽑는다 (추론 시점 규율).
+        # 학습 행의 EB 열은 위 루프에서 시즌별 <g 로 이미 만들어졌다.
+        a.ebp = eb_params(tr, np.ones(len(tr), bool), sc.EB_RATES)
+        print(f"  EB k = " + ", ".join(f"{r}:{a.ebp['k'][r]:.0f}"
+                                       for r in sc.EB_RATES), flush=True)
     features = list(allf) + ctxf + acols
     y = tr[ft.TARGET].to_numpy(np.float64)
     print(f"피처 {len(features)}개 (기본 {len(allf)} + ctx {len(ctxf)} + "
@@ -237,6 +290,8 @@ def main():
         look(*nested_dev(p[m_tr], c[m_tr], y[m_tr], k), c[m_va])
         for (p, c), k in zip(AX, KSH)]) @ WPOST
     drop = (sc.FORM_COLS if a.form else
+            sc.EB_COLS if a.eb else
+            sc.K2_COLS if a.k2 else
             sc.LVL_COLS if a.lvl else
             sc.CTX_COLS if a.ctx else sc.ASOF_COLS)
     base_f = [c for c in features if c not in drop]
@@ -280,10 +335,11 @@ def main():
     print(f"  alpha={ALPHA:.6f}   center={center:.6f}")
     # 기준선 — --form 은 22회차 실측(1040.8656) 위에 곱한다. 22회차는 2024
     # 배수의 78~87% 가 평가셋으로 넘어왔으므로(17-i) 그 구간도 같이 찍는다.
-    b0 = (1044.7656 if a.lvl else 1040.8656 if (a.form or a.ctx) else 955.64)
+    b0 = (1049.9226 if (a.k2 or a.eb) else 1044.7656 if a.lvl
+          else 1040.8656 if (a.form or a.ctx) else 955.64)
     g = r1 / r0 - 1.0
     print(f"  기대 LB  {b0:.4f} x {r1/r0:.4f} = **{b0*(1+g):.1f}**")
-    if a.form or a.ctx or a.lvl:
+    if a.form or a.ctx or a.lvl or a.k2 or a.eb:
         print(f"  전이 78~87% 가정  {b0*(1+g*0.78):.1f} ~ {b0*(1+g*0.87):.1f}")
     if not a.build:
         print("\n(--build 를 주면 pkl/zip 을 만든다)")
@@ -348,6 +404,7 @@ def finish(a, box, y, features, AX, ctx_pack, center, out_pkl, out_zip):
                                         range(42, 42 + a.seeds)],
          "shift": None, "detrend": None, "ctx": ctx_pack,
          "asof_prior": pri,
+         **({"eb": a.ebp} if a.eb else {}),
          "platoon": [
              {"w": float(WPOST[0]), "cols": ["pitcher_id", "batter_hand"],
               "table": tab1, "note": "dev(투수x타자손|부모=투수), n/(n+300)"},

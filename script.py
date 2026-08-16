@@ -177,6 +177,40 @@ LVL_RATES = ("ball", "rev", "str")
 LVL_MUL = ("sh", "bs")
 LVL_COLS = [f"lx_{r}_{t}" for r in LVL_RATES for t in LVL_MUL]
 
+# 2스트라이크 국면 (K2). 2026-08-16 진단에서 나왔다 — 폴드 2024 를 상황별로
+# 쪼개니 `rho^2` 가 **볼카운트에서만** 5.7배 흔들렸다 (아웃 0.90~1.12,
+# 주자수 0.91~1.47, 이닝 0.78~1.25, 손 0.89~0.92 는 전부 평평).
+#
+#   2스트라이크  0-2 338 / 1-2 637 / 2-2 778 / 3-2 699   <- 전체 916 대비 무너짐
+#   3볼         3-0 1928 / 3-1 1504                     <- 오히려 높음
+#
+# 해석 — 3볼은 스트라이크를 던져야 하므로 행동이 강제돼 예측이 쉽다.
+# 2스트라이크는 유인구냐 승부냐가 갈리는데 **그 의도가 데이터에 없다.**
+# 게다가 타깃 정의상 "존에서 크게 벗어난 공"이 실패라, 의도적으로 뺀 공도
+# 실패로 라벨링된다. 의도는 못 보지만 **그 투수가 얼마나 자주 빼는가**는
+# 볼 수 있다 — `cur_ball`(볼 비율)과 `cur_rev`(반대투구 비율)이다.
+#
+# `bs`(볼−스트라이크)와 다르다. `bs=0` 이 (0-0)·(1-1)·(2-2)를 전부 포함하듯
+# `1{strikes==2}` 는 `bs` 의 함수가 아니다. 기존 82열 전체로 선형 회귀해도
+# R^2 가 0.16~0.48 에 그친다.
+K2_RATES = ("ball", "rev")
+K2_COLS = [f"k2_{r}_{t}" for r in K2_RATES for t in ("2s", "2slow")]
+
+# 경험적 베이즈 축소 (EB). `cur_rate` 는 표본이 적으면 분산이 크다 —
+# `cur_n < 100` 인 행이 13.5% 다. 그 선수의 이력(`prior_rate`)으로 당겨
+# **수준은 유지하면서 잡음만 깎는다.**
+#
+#     eb_r = (cur_events_r + k_r * parent_r) / (cur_n + k_r)
+#     parent_r = prior_events_r / prior_n   (이력이 없으면 리그평균)
+#
+# `k_r` 은 학습 데이터에서 적률법으로 뽑아 번들에 담는다 —
+# `k = mu(1-mu) / sigma^2_between`. 고정 500 이 아니다 (20-c 의 S500R 은 그
+# 고정값으로 교체를 시도했다가 min 0.5633 으로 무너졌다).
+#
+# **원시 `cur_rate` 는 그대로 둔다.** 교체가 아니라 추가다.
+EB_RATES = ("succ", "mid", "ball", "rev", "str")
+EB_COLS = [f"eb_{r}" for r in EB_RATES]
+
 
 def attach_asof_state(df, bundle):
     """AS-OF 분해 — 통산 누적에서 **현재 시즌 상태**를 복원한다.
@@ -216,6 +250,7 @@ def attach_asof_state(df, bundle):
         cur = (n_now - p_n).clip(lower=0.0)
         N[kind] = (n_now, cur, ids, tab)
         df[f"cur_logn_{kind}"] = np.log1p(cur)
+    eb = (bundle.get("eb") or {}) if isinstance(bundle, dict) else {}
     for j, (rc, nc, lb, kind) in enumerate(ASOF_SPEC):
         n_now, cur, ids, tab = N[kind]
         # 같은 kind 안에서 몇 번째 비율인지 (prior 벡터의 위치)
@@ -224,6 +259,12 @@ def attach_asof_state(df, bundle):
                          else 0.0 for i in ids], index=df.index, dtype="float64")
         tot = n_now * df[rc].astype("float64").fillna(0.0)
         df[f"cur_{lb}"] = ((tot - p_e) / cur).where(cur > 0)
+        if eb and lb in EB_RATES:
+            k = float(eb["k"][lb])
+            mu = float(eb["mu"][lb])
+            p_n = (n_now - cur).clip(lower=0.0)     # 이력 표본수
+            parent = (p_e / p_n).where(p_n > 0, mu)
+            df[f"eb_{lb}"] = (tot - p_e + k * parent) / (cur + k)
     for lb, pat in FORM_SPEC:
         for k in FORM_WIN:
             src = pat.format(k)
@@ -242,6 +283,13 @@ def attach_asof_state(df, bundle):
     for r in LVL_RATES:
         for t in LVL_MUL:
             df[f"lx_{r}_{t}"] = df[f"cur_{r}"] * mul[t]
+    st = df["strikes_before"].astype("float64")
+    bl = df["balls_before"].astype("float64")
+    k2m = {"2s": (st == 2).astype("float64"),
+           "2slow": ((st == 2) & (bl <= 1)).astype("float64")}
+    for r in K2_RATES:
+        for t in ("2s", "2slow"):
+            df[f"k2_{r}_{t}"] = df[f"cur_{r}"] * k2m[t]
     return df
 
 
