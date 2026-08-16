@@ -46,34 +46,59 @@ ft, sc = ba.ft, ba.sc
 CACHE = os.path.join(ROOT, "exp", "cache")
 
 
-def attach_tmx(tr):
-    """`extra` 6열을 캐시 X 에서 가져온다. **행 정렬을 반드시 검증한다.**"""
+def _check_align(tr):
+    """캐시와 생산 df 의 행 순서가 같은지 확인한다. 틀리면 조용히 오염된다."""
     meta = json.load(io.open(os.path.join(CACHE, "cols.json"), encoding="utf-8"))
     ixc = {c: i for i, c in enumerate(meta["cols"])}
     X = np.load(os.path.join(CACHE, "X.npy"), mmap_mode="r")
     assert len(X) == len(tr), f"행수 불일치 {len(X)} vs {len(tr)}"
     a = np.asarray(X[:, ixc["asof_pitcher_n"]], dtype=np.float64)
-    b = tr["asof_pitcher_n"].to_numpy(np.float64)
-    bad = int((a != b).sum())
+    bad = int((a != tr["asof_pitcher_n"].to_numpy(np.float64)).sum())
     assert bad == 0, f"행 정렬 불일치 {bad:,}행 — 캐시와 생산 df 순서가 다르다"
     print(f"  정렬 검증 OK ({len(tr):,}행)", flush=True)
+    return meta, ixc, X
+
+
+def attach_tmx(tr):
+    """`extra` 6열(spin/hb/ivb)을 캐시 X 에서 가져온다."""
+    meta, ixc, X = _check_align(tr)
     for c in meta["extra"]:
         tr[c] = np.asarray(X[:, ixc[c]], dtype=np.float32)
     return tr, list(meta["extra"])
 
 
+def attach_tmr(tr):
+    """TMR 릴리스 기하 편차를 별도 파일에서 가져온다 (X.npy 는 안 건드린다).
+
+    1차 검증은 편차 6열만 쓴다 — `reldisp`(변위 크기)는 통과했을 때만 후속.
+    """
+    _check_align(tr)
+    T = np.load(os.path.join(CACHE, "tmr.npy"))
+    cols = json.load(io.open(os.path.join(CACHE, "tmr.json"),
+                             encoding="utf-8"))["cols"]
+    assert len(T) == len(tr), f"행수 불일치 {len(T)} vs {len(tr)}"
+    for j, c in enumerate(cols):
+        tr[c] = T[:, j]
+    use = [c for c in cols if c.endswith("_dev")]
+    if "--disp" in sys.argv:
+        use = [c for c in cols if c.endswith("reldisp")]
+    print(f"  TMR 사용 {len(use)}열: {use}", flush=True)
+    return tr, use
+
+
 def main():
     tr = build_df()
-    tr, TMX = attach_tmx(tr)
+    tr, TMX = attach_tmr(tr) if "--tmr" in sys.argv else attach_tmx(tr)
+    NAME = "champ_tmr" if "--tmr" in sys.argv else "champ_tmx"
     tc = pd.read_csv(os.path.join(ft.DATA_DIR, "test.csv"),
                      encoding="utf-8-sig", nrows=0).columns
     allf = [c for c in tc if c != ft.ID]
     ctxf = [c for c in ft.COUNT_FEATS + ft.HAND_FEATS
             if c not in ("tmc_n", "tmh_n")]
     CHAMP = list(allf) + ctxf + sc.ASOF_COLS + sc.CTX_COLS + sc.LVL_COLS
-    GROUPS = {"champ_tmx": TMX}
+    GROUPS = {NAME: TMX}
     if "--split" in sys.argv:                       # 2단계: 내부 분해
-        GROUPS = {"champ_tmx": TMX,
+        GROUPS = {NAME: TMX,
                   "tmx_spin": [c for c in TMX if "spin" in c],
                   "tmx_ivb": [c for c in TMX if "ivb" in c],
                   "tmx_hb": [c for c in TMX if "hb" in c],
@@ -127,7 +152,7 @@ def main():
         print(f"{n:<16}" + "".join(f"{x:>+10.1f}" for x in d)
               + f"{np.mean(d):>+9.1f}{min(d):>+9.1f}{sv:>9.1f}")
     json.dump({n: {str(f): R[n][f] for f in folds} for n, _ in cfgs},
-              io.open(os.path.join(ROOT, "exp", "tmx.json"), "w",
+              io.open(os.path.join(ROOT, "exp", ("tmr.json" if "--tmr" in sys.argv else "tmx.json")), "w",
                       encoding="utf-8"), indent=1)
 
 
