@@ -63,6 +63,19 @@ CONFIGS = {
     # 주의 — 22-r 의 marginal(+20.1/+6.3/+0.7)은 5열 블록 안에서의 값이고
     # 이 단독 구성은 아직 측정된 적이 없다.
     "champ_ebsucc": ["D", "CTX", "LVL", "EBsucc"],
+    # PN -- **직전 경기(들)의 투구 수**를 비율의 숨은 분모에서 역산한 값.
+    #   WHY NEW  : `asof_pitcher_prev{1,3,5}_game_*_rate` 는 비율만 주고 분모를
+    #              주지 않는다. 47개 컬럼 어디에도 경기당 투구 수가 없다.
+    #              모델은 비율 0.5 가 2구에서 나온 건지 100구에서 나온 건지
+    #              **원리적으로 구분할 수 없다** -- D 축과 같은 구조다.
+    #   HOW      : rate 가 소수 6자리로 저장돼 있어 작은 분모의 기약분수는
+    #              유일하게 역산된다. success 와 middle 이 같은 창을 공유하므로
+    #              둘을 **동시에** 정수로 만드는 최소 분모가 참 투구 수다.
+    #   검증     : 복원율 100%, 창 단조성 p1<=p3 95.5% / p3<=p5 87.4%,
+    #              경기당 환산 p1 41.0 / p3/3 37.3 / p5/5 35.2 (독립 3중 일치),
+    #              분포는 불펜(1~30)과 선발(90~119) 이봉형, 최대 151.
+    #   규정4    : 그 행의 자기 값만 쓴다. 다른 test 행/전체 분포 참조 없음.
+    "champ_pn": ["D", "CTX", "LVL", "PN"],
     # REGIME B — 아웃/주자수 압박. 현 Champion 의 맥락 4종(카운트우위·주자유무·
     # 같은손·볼-스트라이크)에 **아웃카운트가 없다.** 주자도 유무(0/1)로만 들어가
     # 있고 몇 명인지는 곱해진 적이 없다.
@@ -86,6 +99,19 @@ CONFIGS = {
     # champ 과 같은 구성. --only 가 부분문자열이라 "champ" 으로 거르면 전부
     # 걸리므로, 기준선만 따로 부를 때 쓰는 별칭이다.
     "base82": ["D", "CTX", "LVL"],
+    # TYPE-SPECIFIC — game_type 이 **다른 변수의 타깃 관계를 바꾼다**는 진단에서
+    # 나왔다. 2024 폴드에서 X 증분이 R +1.65% vs F +12.5%, H1 이 +0.86% vs
+    # +13.4% 로 8~15배 차이났고 cur_mid·cur_logn 은 부호가 뒤집혔다.
+    #   WHY NEW : game_type 자체는 이미 범주형으로 쓰지만, 그것이 **다른 변수의
+    #             관계를 바꾸는 구조**는 명시적으로 준 적이 없다. X 의 맥락
+    #             4종(카운트우위·주자유무·같은손·볼-스트라이크)에 game_type 이 없다.
+    #   형태    : shared + type-specific. 기존 열은 그대로 두고(shared) F 행에만
+    #             켜지는 편차 열을 더한다. 전체 복제가 아니다.
+    #   위험    : F 가 11% 뿐이라 F-specific 파라미터가 과적합될 수 있다.
+    #             K2 가 지시자로 절반을 꺼서 실패한 것과 같은 위험이다.
+    "champ_xt": ["D", "CTX", "LVL", "XT"],      # X x is_F   (+8)
+    "champ_ht": ["D", "CTX", "LVL", "HT"],      # H1 x is_F  (+6)
+    "champ_st": ["D", "CTX", "LVL", "ST"],      # 현재상태 x is_F (+5)
     # RISK — 정보 추가가 아니라 **압축**이다. cur_{mid,ball,rev} 세 실패 유형을
     # 학습 구간에서 추정한 가중으로 1열로 합친다.
     #   WHY NEW : 지금까지는 항상 열을 **늘렸다**. 처음으로 줄인다.
@@ -139,6 +165,16 @@ def main():
     # 튜닝된 값이고 82피처에서 재검토된 적이 없다. X/H1 을 만든 근거가
     # "depth 6 트리는 두 열의 곱을 못 만든다" 였는데 깊이를 안 올려봤다.
     # border_count 32 는 기본값 254 의 1/8 — 연속 cur_* 를 32구간으로만 쪼갠다.
+    # --drop-f : game_type F(2군 추정, 11%) 행을 **학습에서만** 뺀다.
+    # 검증 폴드는 그대로 둔다 — 평가셋에 F 가 있다면 그것도 예측해야 한다.
+    dropf = "--drop-f" in sys.argv
+    # --drop-f-before N : F 행 중 **시즌 N 미만만** 학습에서 뺀다.
+    # 근거 — F 의 성공률이 2022(0.709) 와 2023(0.473) 사이에서 무너져 F-R 격차가
+    # +0.205 에서 -0.030 으로 부호까지 뒤집혔다. 모델에는 시즌 피처가 없으므로
+    # "F 관계가 바뀌었다"를 표현할 수단이 원리적으로 없고, 구체제 4시즌과
+    # 신체제 2시즌을 그냥 평균해버린다. F 전체를 빼면 폴드 2022 가 -1324 로
+    # 무너지니(F 자체는 필수 정보다) 스테일한 F 만 버리는 것이 맞다.
+    dfb = int(argv("--drop-f-before", "0"))
     dep = int(argv("--depth", "0"))
     bor = int(argv("--border", "0"))
     names = [n for n in CONFIGS if not only or any(t in n for t in only.split(","))]
@@ -167,6 +203,13 @@ def main():
 
     L = lambda a: np.log1p(np.clip(a, 0, None)).astype(np.float32)
     F32 = lambda cs: np.column_stack(cs).astype(np.float32)
+
+    def build_PN():
+        """직전 1/3/5 경기의 투구 수(역산). 0 = 복원 실패이므로 NaN 으로 둔다."""
+        a = np.load(os.path.join(ROOT, "exp", "cache", "prevn.npy")
+                    ).astype(np.float64)
+        a[a <= 0] = np.nan
+        return F32([np.log1p(a[:, 0]), np.log1p(a[:, 1]), np.log1p(a[:, 2])])
     mul = lambda: {
         "adv": (C("strikes_before") > C("balls_before")).astype(np.float64),
         "onb": (C("num_runners_on") > 0).astype(np.float64),
@@ -342,9 +385,28 @@ def main():
         return F32([s0[f"cur_{LBLS[i]}"] for i in keep]
                    + [L(s0[f"cur_n_{n}"]) for n in NCOLS])
 
+    isF = lambda: (C("game_type") == 0).astype(np.float64)
+
+    def build_XT():
+        return (np.asarray(B.get("CTX", "dx8_v1", build_CTX))
+                * isF()[:, None]).astype(np.float32)
+
+    def build_HT():
+        return (np.asarray(B.get("LVL", "lx6_v1", build_LVL))
+                * isF()[:, None]).astype(np.float32)
+
+    def build_ST():
+        s0, f = S0(), isF()
+        return F32([s0[f"cur_{r}"] * f
+                    for r in ("succ", "mid", "ball", "rev", "str")])
+
     BUILD = {"D": ("asof13_v1", build_D),
+             "XT": ("ctx_x_isF_v1", build_XT),
+             "HT": ("lvl_x_isF_v1", build_HT),
+             "ST": ("state_x_isF_v1", build_ST),
              "RISK": ("risk_mbr_wf_v1", build_RISK),
              "Dm3": ("asof10_drop_mbr_v1", build_Dm3),
+             "PN": ("prevn_log3_v1", build_PN),
              "CTX": ("dx8_v1", build_CTX),
              "LVL": ("lx6_v1", build_LVL),
              "EBsucc": ("ebsucc_prior_v1", build_EBsucc),
@@ -378,6 +440,10 @@ def main():
         hp["depth"] = dep; tag += f"_d{dep}"
     if bor:
         hp["border_count"] = bor; tag += f"_b{bor}"
+    if dropf:
+        tag += "_noF"
+    if dfb:
+        tag += f"_noFb{dfb}"
     if tag:
         print(f"용량 변경 depth={hp['depth']} border={hp['border_count']}",
               flush=True)
@@ -391,6 +457,11 @@ def main():
         tr, va = season < f, season == f
         if tfrom:
             tr = tr & (season >= tfrom)
+        isf = np.asarray(X[:, ixc["game_type"]]) == 0
+        if dropf:
+            tr = tr & ~isf
+        if dfb:
+            tr = tr & ~(isf & (season < dfb))
         yv, ytr = y[va], y[tr].astype(int)
         print(f"\n=== 폴드 {f}  학습 {int(tr.sum()):,}행"
               + (f"  (>= {tfrom})" if tfrom else "") + " ===", flush=True)
