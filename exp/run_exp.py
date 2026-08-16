@@ -76,6 +76,18 @@ CONFIGS = {
     #              분포는 불펜(1~30)과 선발(90~119) 이봉형, 최대 151.
     #   규정4    : 그 행의 자기 값만 쓴다. 다른 test 행/전체 분포 참조 없음.
     "champ_pn": ["D", "CTX", "LVL", "PN"],
+    # TMX -- TrackMan 회전/무브먼트의 맥락 조건부 투수 편차 6열.
+    #   WHY NEW  : `cols.json` 의 `extra` 에 **이미 만들어져 있는데 한 번도
+    #              시험된 적이 없다** (원장·run_exp 어디에도 이력 없음).
+    #              TrackMan 30컬럼 중 Champion 이 실제로 쓰는 원천은
+    #              `pitch_type_group` 과 `rel_speed` 둘뿐이고,
+    #              `spin_rate`/`horz_break`/`induced_vert_break` 는 미사용이다.
+    #   WHY 형태  : 채택된 8열(LB +10.98)과 **같은 구성**이다 -- 투수가 그 카운트
+    #              /타자손에서 자기 평균 대비 얼마나 벗어나는가. 행마다 카운트·손
+    #              으로 조회되므로 **행 단위로 값이 변한다** (TR-VAR 이 기각된
+    #              이유가 투수 상수였던 것과 갈리는 지점).
+    #   주의     : TrackMan 은 2024 에서 끝난다. 2025 의 시간 변화는 못 담는다.
+    "champ_tmx": ["D", "CTX", "LVL", "TMX"],
     # REGIME B — 아웃/주자수 압박. 현 Champion 의 맥락 4종(카운트우위·주자유무·
     # 같은손·볼-스트라이크)에 **아웃카운트가 없다.** 주자도 유무(0/1)로만 들어가
     # 있고 몇 명인지는 곱해진 적이 없다.
@@ -203,6 +215,10 @@ def main():
 
     L = lambda a: np.log1p(np.clip(a, 0, None)).astype(np.float32)
     F32 = lambda cs: np.column_stack(cs).astype(np.float32)
+
+    def build_TMX():
+        """`extra` 6열 — tmc/tmh x {spin, hb, ivb} 편차."""
+        return F32([C(c) for c in meta["extra"]])
 
     def build_PN():
         """직전 1/3/5 경기의 투구 수(역산). 0 = 복원 실패이므로 NaN 으로 둔다."""
@@ -406,6 +422,7 @@ def main():
              "ST": ("state_x_isF_v1", build_ST),
              "RISK": ("risk_mbr_wf_v1", build_RISK),
              "Dm3": ("asof10_drop_mbr_v1", build_Dm3),
+             "TMX": ("tm_spin_hb_ivb_v1", build_TMX),
              "PN": ("prevn_log3_v1", build_PN),
              "CTX": ("dx8_v1", build_CTX),
              "LVL": ("lx6_v1", build_LVL),
