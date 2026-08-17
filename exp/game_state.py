@@ -51,7 +51,7 @@ except Exception:
 def main():
     tr = build_df()
     season = tr["season"].to_numpy()
-    y = tr["control_species"] if False else tr["control_success"].to_numpy(np.float64)
+    y = tr["control_success"].to_numpy(np.float64)
     m24 = season == 2024
     P = np.load(os.path.join(ROOT, "exp", "prod_champ_2024.npy"))
     pred = P[:3].mean(0) + np.load(os.path.join(ROOT, "exp",
@@ -131,6 +131,28 @@ def main():
                   f"{y24[m].mean():>9.4f}")
     c = np.corrcoef(idx, res)[0, 1]
     print(f"  corr(경기 내 순번, 잔차) = {c:+.4f}  ({c*np.sqrt(len(idx)):+.1f}SE)")
+
+    print()
+    print("=== 경계 신호가 그 행 하나로 식별되는가 (규정 4 관문) ===")
+    first = idx == 1
+    print(f"  경기 첫 투구 행 {int(first.sum()):,} ({first.mean():.1%})")
+    bb = tr["balls_before"].to_numpy(np.int64)[m24]
+    ss = tr["strikes_before"].to_numpy(np.int64)[m24]
+    inn = tr["inning"].to_numpy(np.int64)[m24]
+    ob = tr["num_runners_on"].to_numpy(np.int64)[m24]
+    outs = tr["outs_before"].to_numpy(np.int64)[m24]
+    fresh = (bb == 0) & (ss == 0)
+    opener = fresh & (inn == 1) & (outs == 0) & (ob == 0)
+    print(f"  0-0 카운트 행 {fresh.mean():.1%} 중 실제 경기 첫 투구는 "
+          f"{first[fresh].mean():.1%}  -> 0-0 만으로는 식별 불가")
+    print(f"  1회 0아웃 주자없음 0-0 행 {opener.mean():.2%} 중 실제 첫 투구 "
+          f"{first[opener].mean():.1%}  -> 선발 첫 투구만 식별된다")
+    print(f"  경기 첫 투구의 성공률 {y24[first].mean():.4f} vs 나머지 "
+          f"{y24[~first].mean():.4f}   잔차평균 {res[first].mean():+.4f} vs "
+          f"{res[~first].mean():+.4f}")
+    v, nc, bk = cv2_gain(first.astype(np.int64), pred, y24, half)
+    print(f"  '경기 첫 투구' 지시자 오라클 {v:+.1f}")
+    out["first_pitch_oracle"] = float(v)
 
     json.dump(out, io.open(os.path.join(ROOT, "exp", "game_state.json"), "w",
                            encoding="utf-8"), indent=1, ensure_ascii=False)
