@@ -177,6 +177,25 @@ LVL_RATES = ("ball", "rev", "str")
 LVL_MUL = ("sh", "bs")
 LVL_COLS = [f"lx_{r}_{t}" for r in LVL_RATES for t in LVL_MUL]
 
+# 비 (RX). X/H1 은 **곱**을 줬다. 비는 한 번도 주지 않았다.
+#
+# 자료 생성 감사(2026-08-18)에서 투수 결과 비율들의 상관 구조가 나왔다.
+#
+#     corr(success, reverse) = -0.865      corr(strike, ball) = -0.779
+#
+# 즉 success 와 reverse 는 독립 지표가 아니라 **제구 방향 한 축의 양끝**이다.
+# 그 축 위의 위치는 두 값의 **비**인데, 모델에는 두 비율이 따로 들어가 있을
+# 뿐이고 축평행 트리는 비를 만들 수 없다 (곱을 못 만드는 것과 같은 이유).
+#
+# 다섯 비율은 합이 1 이 아니다 — success+reverse+middle = 0.893, strike+ball
+# = 0.813 으로 이름 없는 계급이 둘 있다. 그래서 단순 차가 아니라 로그비를 쓴다.
+RX_EPS = 1e-3
+RX_PAIR = [("cmd", "succ", "rev"),      # 제구 방향 축
+           ("zone", "str", "ball"),     # 존 축
+           ("mist", "mid", "succ")]     # 실투 성향 대비 커맨드
+RX_COLS = ([f"rx_{tag}" for tag, _, _ in RX_PAIR]
+           + [f"rx_{tag}_{m}" for tag, _, _ in RX_PAIR for m in ("sh", "bs")])
+
 # 2스트라이크 국면 (K2). 2026-08-16 진단에서 나왔다 — 폴드 2024 를 상황별로
 # 쪼개니 `rho^2` 가 **볼카운트에서만** 5.7배 흔들렸다 (아웃 0.90~1.12,
 # 주자수 0.91~1.47, 이닝 0.78~1.25, 손 0.89~0.92 는 전부 평평).
@@ -283,6 +302,12 @@ def attach_asof_state(df, bundle):
     for r in LVL_RATES:
         for t in LVL_MUL:
             df[f"lx_{r}_{t}"] = df[f"cur_{r}"] * mul[t]
+    for tag, hi, lo in RX_PAIR:
+        v = (np.log(df[f"cur_{hi}"].astype("float64") + RX_EPS)
+             - np.log(df[f"cur_{lo}"].astype("float64") + RX_EPS))
+        df[f"rx_{tag}"] = v
+        for m in ("sh", "bs"):
+            df[f"rx_{tag}_{m}"] = v * mul[m]
     st = df["strikes_before"].astype("float64")
     bl = df["balls_before"].astype("float64")
     k2m = {"2s": (st == 2).astype("float64"),

@@ -1,0 +1,50 @@
+{
+ "\uc804\uccb4 5\uac1c (\uae30\uc900)": {
+  "score": 965.3116588400951,
+  "secs": 199.72287344932556,
+  "spec": [
+   "cur_succ+",
+   "cur_rev-",
+   "cur_mid-",
+   "cur_ball-",
+   "asof_pitcher_success_rate+"
+  ]
+ },
+ "\ud1b5\uc0b0\uae4c\uc9c0 10\uac1c": {
+  "score": 968.146031805699,
+  "secs": 200.31809401512146,
+  "spec": [
+   "cur_succ+",
+   "cur_rev-",
+   "cur_mid-",
+   "cur_ball-",
+   "asof_pitcher_success_rate+",
+   "asof_pitcher_middle_rate-",
+   "asof_pitcher_reverse_rate-",
+   "asof_pitcher_ball_rate-",
+   "asof_pitcher_strike_rate+",
+   "cur_str+"
+  ]
+ },
+ "\uc9c1\uc804\uacbd\uae30\uae4c\uc9c0 15\uac1c": {
+  "score": 958.2004835868852,
+  "secs": 198.0739471912384,
+  "spec": [
+   "cur_succ+",
+   "cur_rev-",
+   "cur_mid-",
+   "cur_ball-",
+   "asof_pitcher_success_rate+",
+   "asof_pitcher_middle_rate-",
+   "asof_pitcher_reverse_rate-",
+   "asof_pitcher_ball_rate-",
+   "asof_pitcher_strike_rate+",
+   "cur_str+",
+   "asof_pitcher_prev1_game_success_rate+",
+   "asof_pitcher_prev3_game_success_rate+",
+   "asof_pitcher_prev5_game_success_rate+",
+   "asof_pitcher_prev1_game_middle_rate-",
+   "asof_pitcher_prev3_game_middle_rate-"
+  ]
+ }
+}

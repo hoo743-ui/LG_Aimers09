@@ -1,21 +1,22 @@
 {
  "champion": {
-  "artifact": "submissions/cand_submit_3.zip",
-  "lb_score": 1057.3394030999,
-  "sha256": "82799a5cd6b056312eb50070d4d0078cd6a0a53ae09d6b26855277fae828d3e8",
-  "updated_at": "2026-08-18T02:50:23"
+  "artifact": "submissions/cand_wd060.zip",
+  "lb_score": 1060.3076531721,
+  "sha256": "bd798b9a6e46275afa1f101d230aef16825464adf34ea620837fb8bb9213470e",
+  "updated_at": "2026-08-18T06:21:22",
+  "note": "차등 3축 x0.60. 모델은 cand_submit_3 과 동일"
  },
  "lb_anchors": {
-  "C1": 1049.9225979712,
-  "C2": 1053.5950918323,
-  "C3": 1057.3394030999,
+  "C1 w=0": 1049.9225979712,
+  "C3 w=1.0": 1057.3394030999,
+  "wd060 w=0.6": 1060.3076531721,
   "cand_final(실패)": 1047.3863324656
  },
  "current_experiment": null,
- "current_hypothesis": "S-1",
- "last_completed_experiment": "EXP021",
+ "current_hypothesis": "M1",
+ "last_completed_experiment": "EXP023b",
  "next_experiment": null,
- "experiments_completed": 20,
+ "experiments_completed": 23,
  "signals_active": [
   "D current-state",
   "residual hand differential",
@@ -34,26 +35,15 @@
  },
  "submission_candidates": [
   {
-   "name": "cand_wd060.zip",
-   "sha256": "bd798b9a6e46275afa1f101d230aef16825464adf34ea620837fb8bb9213470e",
-   "change": "차등 3축 x0.60",
-   "purpose": "b 결정 — 최악 -1.2 / 최선 +5.9"
-  },
-  {
-   "name": "cand_wd035.zip",
-   "sha256": "306e6a495fde07f1e282c713e0bbfe6b7452d59e90bc1f3dde94231120379844",
-   "change": "차등 3축 x0.35",
-   "purpose": "곡선 3번째 점 · 포물선 가정 검증"
-  },
-  {
-   "name": "cand_dev075.zip",
-   "sha256": "fd77227b2041ccfbcb2bf3f36acc9c5c98d2a65dcd59e6263be308a5d596ef4b",
-   "change": "편차 4축 x0.75",
-   "purpose": "기여 +37.1 짜리 성분의 감쇠 방향 검정"
+   "name": "cand_mono10.zip",
+   "sha256": "686386bbaa4a0ce4960db4c7cc0bcee494050dfcc385e18e3f5ee5fb0e1c64a1",
+   "change": "모델에 단조 제약 10열 + 차등 3축 w=0.65",
+   "local_2024": "968.1 (무제약 958.7, +9.4)",
+   "verified": "verify 4단계 + 단독행/배치 0.00e+00"
   }
  ],
  "research_space_status": "READY_FOR_NEXT_HYPOTHESIS",
- "updated_at": "2026-08-18T06:15:01",
+ "updated_at": "2026-08-18T07:36:55",
  "research_level": 4,
  "level_name": "ALL LEVELS SWEPT",
  "levels": {

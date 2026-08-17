@@ -164,6 +164,16 @@ def add_state(df, tabs):
     return sc.attach_asof_state(df, {"asof_prior": tabs})
 
 
+# 단조 제약 (2026-08-18, EXP023/023b). 방향을 **물리로** 아는 10열에만 건다.
+# 폴드 2024 실측 — 제약 0개 958.7 / 3개 961.0 / 5개 965.3 / **10개 968.1** / 15개 958.2.
+# 15개에서 무너지는 것은 직전경기 창(F 계열)이라 부호가 불안정하기 때문이다.
+MONO_10 = {"cur_succ": 1, "cur_rev": -1, "cur_mid": -1, "cur_ball": -1, "cur_str": 1,
+           "asof_pitcher_success_rate": 1, "asof_pitcher_middle_rate": -1,
+           "asof_pitcher_reverse_rate": -1, "asof_pitcher_ball_rate": -1,
+           "asof_pitcher_strike_rate": 1}
+MONO_SPEC = {}          # --mono 로 켠다
+
+
 def pipeline(features, seed):
     cat = [c for c in ft.CAT_COLS if c in features]
     num = [c for c in features if c not in cat]
@@ -171,8 +181,15 @@ def pipeline(features, seed):
         [("cat", OrdinalEncoder(handle_unknown="use_encoded_value",
                                 unknown_value=-1), cat),
          ("num", "passthrough", num)])
-    return Pipeline([("pre", pre),
-                     ("clf", CatBoostClassifier(random_seed=seed, **HP))])
+    clf = CatBoostClassifier(random_seed=seed, **HP)
+    if MONO_SPEC:
+        order = cat + num          # ColumnTransformer 출력 순서
+        v = [0] * len(order)
+        for nm, sg in MONO_SPEC.items():
+            if nm in order:
+                v[order.index(nm)] = sg
+        clf.set_params(monotone_constraints=v)
+    return Pipeline([("pre", pre), ("clf", clf)])
 
 
 def main():
@@ -187,6 +204,10 @@ def main():
                     help="H1(수준확장) 6개를 --ctx 위에 더한다 — 25회차 후보")
     ap.add_argument("--eb", action="store_true",
                     help="EB 축소 5개를 --ctx --lvl 위에 더한다 (원시는 유지)")
+    ap.add_argument("--mono", action="store_true",
+                    help="물리로 아는 10열에 단조 제약 (EXP023b: 2024 +9.4)")
+    ap.add_argument("--rx", action="store_true",
+                    help="RX(로그비) 9개를 더한다 — 곱은 줬고 비는 안 줬다")
     ap.add_argument("--k2", action="store_true",
                     help="K2(2스트라이크 국면) 4개를 --ctx --lvl 위에 더한다")
     ap.add_argument("--center", type=float, default=None,
@@ -201,11 +222,17 @@ def main():
     assert not (a.k2 and not a.lvl), "--k2 는 --lvl 위에 얹는다"
     assert not (a.eb and not a.lvl), "--eb 는 --lvl 위에 얹는다"
     assert not (a.eb and a.k2), "한 번에 하나만 바꾼다"
+    assert not (a.rx and not a.lvl), "--rx 는 --lvl 위에 얹는다"
+    global MONO_SPEC
+    if a.mono:
+        MONO_SPEC = MONO_10
+        print(f'  단조 제약 {len(MONO_10)}열 적용')
     acols = (sc.ASOF_COLS + (sc.FORM_COLS if a.form else [])
              + (sc.CTX_COLS if a.ctx else [])
              + (sc.LVL_COLS if a.lvl else [])
              + (sc.K2_COLS if a.k2 else [])
-             + (sc.EB_COLS if a.eb else []))
+             + (sc.EB_COLS if a.eb else [])
+             + (sc.RX_COLS if a.rx else []))
     a.acols = acols
     out_pkl, out_zip = (OUT_PKL, OUT_ZIP)
     if a.form:
@@ -289,7 +316,8 @@ def main():
     post = np.column_stack([
         look(*nested_dev(p[m_tr], c[m_tr], y[m_tr], k), c[m_va])
         for (p, c), k in zip(AX, KSH)]) @ WPOST
-    drop = (sc.FORM_COLS if a.form else
+    drop = (sc.RX_COLS if a.rx else
+            sc.FORM_COLS if a.form else
             sc.EB_COLS if a.eb else
             sc.K2_COLS if a.k2 else
             sc.LVL_COLS if a.lvl else
