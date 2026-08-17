@@ -12,6 +12,8 @@ RESEARCH = ROOT / "research"
 STATE_FILE = RESEARCH / "state.json"
 CHECKPOINT_FILE = RESEARCH / "checkpoint.json"
 HEARTBEAT_FILE = RESEARCH / "heartbeat.json"
+CLAUDE_STATE_FILE = RESEARCH / "manager_claude.json"
+CONTROL_FILE = RESEARCH / "control.json"
 
 LOG_DIR = RESEARCH / "manager_logs"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -82,6 +84,88 @@ def write_json_atomic(path: Path, data: dict):
     )
     os.replace(tmp, path)
 
+def read_control_action():
+    if not CONTROL_FILE.exists():
+        return None
+
+    try:
+        data = json.loads(
+            CONTROL_FILE.read_text(encoding="utf-8")
+        )
+        return data.get("action")
+    except Exception:
+        return None
+
+
+def clear_control_action():
+    try:
+        if CONTROL_FILE.exists():
+            CONTROL_FILE.unlink()
+    except Exception as exc:
+        log(f"[WARN] control.json delete failed: {exc}")
+
+
+def handle_control_action():
+    """
+    GUI -> Research Manager control bridge.
+
+    PAUSE:
+        현재 실행 중인 실험은 죽이지 않는다.
+        현재 실험이 끝난 뒤 새 연구를 시작하지 않는다.
+
+    RESUME:
+        자율 연구 재개.
+
+    STOP:
+        Research Manager만 중단한다.
+        현재 실험 Python은 죽이지 않는다.
+    """
+
+    action = read_control_action()
+
+    if action == "PAUSE":
+        state = read_json(STATE_FILE)
+        state["manager_mode"] = "PAUSED"
+        state["pause_requested_at"] = now()
+
+        write_json_atomic(STATE_FILE, state)
+        clear_control_action()
+
+        log(
+            "[CONTROL] PAUSE requested. "
+            "Current experiment will NOT be killed."
+        )
+
+        return "PAUSE"
+
+    if action == "RESUME":
+        state = read_json(STATE_FILE)
+        state["manager_mode"] = "RUNNING"
+        state["resumed_at"] = now()
+
+        write_json_atomic(STATE_FILE, state)
+        clear_control_action()
+
+        log("[CONTROL] RESUME requested.")
+
+        return "RESUME"
+
+    if action == "STOP":
+        state = read_json(STATE_FILE)
+        state["manager_mode"] = "STOPPING"
+        state["stop_requested_at"] = now()
+
+        write_json_atomic(STATE_FILE, state)
+        clear_control_action()
+
+        log(
+            "[CONTROL] STOP requested. "
+            "Manager will stop after current loop."
+        )
+
+        return "STOP"
+
+    return None
 
 def log(message: str):
     line = f"[{now()}] {message}"
@@ -144,28 +228,59 @@ def print_status():
     print("============================================\n")
 
 
-def claude_running() -> bool:
-    """
-    Claude CLI 자체가 이미 실행 중인지 대략 확인.
-    중복 실행 방지용.
-    """
-    try:
-        result = subprocess.run(
-            ["tasklist", "/FI", "IMAGENAME eq claude.exe"],
-            capture_output=True,
-            text=True,
-            encoding="cp949",
-            errors="ignore",
-            timeout=5,
-        )
-        return "claude.exe" in result.stdout.lower()
+def launch_claude():
+    # Manager가 직접 띄운 Claude만 확인한다.
+    if managed_claude_running():
+        log("[SKIP] Managed Claude already running.")
+        return None
 
-    except Exception:
-        return False
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    stdout_log = LOG_DIR / f"claude_{timestamp}.log"
+
+    log("[START] Launching managed Claude autonomous research...")
+
+    try:
+        with stdout_log.open("w", encoding="utf-8") as out:
+            proc = subprocess.Popen(
+                [
+                    "claude",
+                    "-p",
+                    CLAUDE_PROMPT,
+                    "--max-budget-usd",
+                    "10",
+                ],
+                cwd=str(ROOT),
+                stdout=out,
+                stderr=subprocess.STDOUT,
+                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
+            )
+
+        write_json_atomic(
+            CLAUDE_STATE_FILE,
+            {
+                "pid": proc.pid,
+                "started_at": now(),
+                "status": "RUNNING",
+            },
+        )
+
+        log(f"[OK] Managed Claude launched. PID={proc.pid}")
+        return proc
+
+    except FileNotFoundError:
+        log(
+            "[ERROR] 'claude' command not found. "
+            "Run 'claude --version' first."
+        )
+        return None
+
+    except Exception as exc:
+        log(f"[ERROR] Claude launch failed: {exc}")
+        return None
 
 
 def launch_claude():
-    if claude_running():
+    if managed_claude_running():
         log("[SKIP] Claude already running.")
         return None
 
@@ -228,6 +343,22 @@ def monitor_loop():
     print_status()
 
     while True:
+        action = handle_control_action()
+
+        state = read_json(STATE_FILE)
+        manager_mode = state.get("manager_mode", "RUNNING")
+
+        if action == "STOP" or manager_mode == "STOPPING":
+            log("[CONTROL] Manager stopping by user request.")
+            break
+
+        if manager_mode == "PAUSED":
+            log(
+                "[CONTROL] Manager paused. "
+                "Monitoring only; no new Claude launch."
+            )
+            time.sleep(POLL_SECONDS)
+            continue
         state, checkpoint, heartbeat = current_status()
 
         status = checkpoint.get("status")
@@ -251,14 +382,14 @@ def monitor_loop():
                 mark_interrupted()
 
                 # Claude가 이미 있다면 기다림
-                if not claude_running():
+                if not managed_claude_running():
                     launch_claude()
 
         # ----------------------------------------
         # 2) 실험이 완료되었거나 현재 실행이 없는 경우
         # ----------------------------------------
         elif status in ("COMPLETED", "FAILED", "INTERRUPTED", None):
-            if not claude_running():
+            if not managed_claude_running():
                 log(
                     f"[IDLE] checkpoint={status}. "
                     "Starting/resuming autonomous research."
@@ -302,7 +433,7 @@ def main():
         print(f"Checkpoint  : {checkpoint.get('status')}")
         print(f"PID         : {checkpoint.get('process_id')}")
         print(f"PID alive   : {process_exists(checkpoint.get('process_id'))}")
-        print(f"Claude alive: {claude_running()}")
+        print(f"Claude alive: {managed_claude_running()}")
         print(f"Next        : {state.get('next_experiment')}")
         print("==============================")
         print("DRY RUN: no process will be started or stopped.\n")

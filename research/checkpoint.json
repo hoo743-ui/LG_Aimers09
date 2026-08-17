@@ -1,9 +1,9 @@
 {
- "current_experiment": "EXP012",
- "hypothesis": "L3-B",
- "process_id": 10300,
- "command": "python research/exp012_seasonw.py",
- "start_time": "2026-08-18T04:20:51",
- "last_update": "2026-08-18T04:20:55",
+ "current_experiment": "EXP014",
+ "hypothesis": "L0-P",
+ "process_id": 17048,
+ "command": "python research/exp014_portfolio.py",
+ "start_time": "2026-08-18T04:32:21",
+ "last_update": "2026-08-18T04:44:35",
  "status": "RUNNING"
 }

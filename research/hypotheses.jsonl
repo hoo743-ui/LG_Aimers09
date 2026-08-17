@@ -39,3 +39,4 @@
 {"id": "L3-A", "status": "CLOSED", "updated_at": "2026-08-18T04:14:17", "level": 3, "note": "§1,§2 유효 / §3 무효"}
 {"id": "L3-B", "family": "LEVEL3 학습", "type": "B", "level": 3, "priority": 5.0, "hypothesis": "시즌 표본가중(지수 감쇠)으로 최신성 검정", "mechanism": "창 자르기는 D 를 깨므로 불가. 가중은 D 를 보존한다. 다만 기제 표적판(구체제 F 행 제외)은 이미 -9.7 로 실패했으므로 사전 확률이 낮다", "status": "CANDIDATE", "cost": "학습 1회 이상", "created_at": "2026-08-18T04:14:17"}
 {"id": "L4-A", "status": "MEASURED", "updated_at": "2026-08-18T04:15:23", "level": 4, "hypothesis": "정보 천장의 정보원별 분해", "result": 5429.8}
+{"id": "L3-B", "status": "CLOSED", "updated_at": "2026-08-18T04:31:46", "level": 3, "result": 0.0}

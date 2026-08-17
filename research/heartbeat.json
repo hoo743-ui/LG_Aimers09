@@ -1,8 +1,8 @@
 {
  "status": "RUNNING",
- "experiment_id": "EXP012",
- "started_at": "2026-08-18T04:20:51",
- "last_heartbeat": "2026-08-18T04:20:55",
- "current_step": "gamma=1.0",
- "pid": 10300
+ "experiment_id": "EXP014",
+ "started_at": "2026-08-18T04:32:21",
+ "last_heartbeat": "2026-08-18T04:44:35",
+ "current_step": "plac6 150/246",
+ "pid": 17048
 }
