@@ -41,3 +41,8 @@
 {"id": "L4-A", "status": "MEASURED", "updated_at": "2026-08-18T04:15:23", "level": 4, "hypothesis": "정보 천장의 정보원별 분해", "result": 5429.8}
 {"id": "L3-B", "status": "CLOSED", "updated_at": "2026-08-18T04:31:46", "level": 3, "result": 0.0}
 {"id": "L4-B", "status": "MEASURED", "updated_at": "2026-08-18T04:53:18", "level": 4, "hypothesis": "접근 수준별 가치", "result": 169.03}
+{"id": "L0-P", "status": "CLOSED", "updated_at": "2026-08-18T05:12:43", "level": 0, "hypothesis": "약신호 포트폴리오", "result": -16.86}
+{"id": "L0-Q", "status": "PROMISING", "updated_at": "2026-08-18T05:39:17", "level": 0, "hypothesis": "지속성 전수 측정", "result": 43}
+{"id": "L0-R", "status": "CLOSED", "updated_at": "2026-08-18T05:41:55", "level": 0, "hypothesis": "_bs(볼−스트라이크) 계열 지속성", "result": 0}
+{"id": "L0-S", "status": "CLOSED", "updated_at": "2026-08-18T05:43:51", "level": 0, "hypothesis": "지속성의 구성 교란 여부", "result": 0}
+{"id": "L0-T", "status": "CLOSED", "updated_at": "2026-08-18T05:47:01", "level": 0, "hypothesis": "타자 주체 지속성 재측정", "result": 0}

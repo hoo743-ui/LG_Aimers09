@@ -12,10 +12,10 @@
   "cand_final(실패)": 1047.3863324656
  },
  "current_experiment": null,
- "current_hypothesis": "L4-B",
- "last_completed_experiment": "EXP015",
- "next_experiment": "EXP015",
- "experiments_completed": 13,
+ "current_hypothesis": "L0-T",
+ "last_completed_experiment": "EXP019",
+ "next_experiment": "EXP020",
+ "experiments_completed": 18,
  "signals_active": [
   "D current-state",
   "residual hand differential",
@@ -33,8 +33,8 @@
   "note": "30회차 실패로 동결. TYPE B 변경 금지"
  },
  "submission_candidates": [],
- "research_space_status": "LEVEL 0,1,2,3,4 모두 소진 — 재개 근거 대기",
- "updated_at": "2026-08-18T04:53:18",
+ "research_space_status": "LEVEL 0~4 소진 · 자료생성 원리로 닫힘 근거 확보",
+ "updated_at": "2026-08-18T05:48:35",
  "research_level": 4,
  "level_name": "ALL LEVELS SWEPT",
  "levels": {
@@ -43,5 +43,7 @@
   "2": "EXHAUSTED (분산 0.9999 / 편향 전이 0)",
   "3": "EXHAUSTED (표본가중 단조 악화, 창은 D 가 묶음)",
   "4": "MAPPED (천장 분해 + 규정4 값 +83.5)"
- }
+ },
+ "next_hypothesis": "H004",
+ "next_hypothesis_priority": 4.0
 }

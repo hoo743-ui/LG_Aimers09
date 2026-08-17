@@ -14,6 +14,80 @@ HYPO = os.path.join(RES, "hypotheses.jsonl")
 EXPS = os.path.join(RES, "experiments.jsonl")
 CLOSED = os.path.join(RES, "closed_families.json")
 
+def next_candidate():
+    """
+    hypotheses.jsonl의 최신 상태를 기준으로
+    아직 실행할 가치가 있는 hypothesis 하나를 선택한다.
+    """
+
+    hypotheses = latest_hypotheses()
+
+    candidates = []
+
+    for hyp_id, h in hypotheses.items():
+        status = h.get("status")
+
+        if status not in ("CANDIDATE", "PROMISING"):
+            continue
+
+        # 이미 현재 실행 중이면 제외
+        current = read(STATE, {}).get("current_experiment")
+        if current and h.get("experiment_id") == current:
+            continue
+
+        priority = float(h.get("priority", 0))
+
+        candidates.append((priority, hyp_id, h))
+
+    if not candidates:
+        return None
+
+    candidates.sort(
+        key=lambda x: (-x[0], x[1])
+    )
+
+    _, hyp_id, hyp = candidates[0]
+
+    return {
+        "id": hyp_id,
+        "hypothesis": hyp,
+        "priority": float(hyp.get("priority", 0))
+    }
+
+def finish_experiment(rec, status="COMPLETED"):
+    rec.setdefault("finished_at", now())
+    append_jsonl(EXPS, rec)
+
+    c = read(CKPT, {})
+    c["status"] = status
+    c["last_update"] = now()
+    _atomic(CKPT, c)
+
+    s = read(STATE, {})
+
+    s["last_completed_experiment"] = rec.get("experiment_id")
+    s["current_experiment"] = None
+    s["experiments_completed"] = (
+        int(s.get("experiments_completed", 0)) + 1
+    )
+
+    # 다음 hypothesis 자동 선택
+    nxt = next_candidate()
+
+    if nxt:
+        s["next_hypothesis"] = nxt["id"]
+        s["next_experiment"] = None
+        s["next_hypothesis_priority"] = nxt["priority"]
+        s["research_space_status"] = "READY_FOR_NEXT_HYPOTHESIS"
+    else:
+        s["next_hypothesis"] = None
+        s["next_experiment"] = None
+        s["research_space_status"] = "CURRENT_LEVEL_EXHAUSTED"
+
+    s["updated_at"] = now()
+    _atomic(STATE, s)
+
+    beat("done")
 
 def now():
     return datetime.datetime.now().isoformat(timespec="seconds")
@@ -78,22 +152,6 @@ def beat(step):
                        current_step=step, pid=os.getpid()))
     c["last_update"] = now()
     _atomic(CKPT, c)
-
-
-def finish_experiment(rec, status="COMPLETED"):
-    rec.setdefault("finished_at", now())
-    append_jsonl(EXPS, rec)
-    c = read(CKPT, {})
-    c["status"] = status
-    c["last_update"] = now()
-    _atomic(CKPT, c)
-    s = read(STATE, {})
-    s["last_completed_experiment"] = rec.get("experiment_id")
-    s["current_experiment"] = None
-    s["experiments_completed"] = int(s.get("experiments_completed", 0)) + 1
-    s["updated_at"] = now()
-    _atomic(STATE, s)
-    beat("done")
 
 
 def set_hypothesis_status(hyp_id, status, **kw):

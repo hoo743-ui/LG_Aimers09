@@ -1,9 +1,9 @@
 {
- "current_experiment": "EXP015",
- "hypothesis": "L4-B",
- "process_id": 30376,
- "command": "python research/exp015_access.py",
- "start_time": "2026-08-18T04:53:01",
- "last_update": "2026-08-18T04:54:08",
+ "current_experiment": "EXP019",
+ "hypothesis": "L0-T",
+ "process_id": 28572,
+ "command": "python research/exp019_batter.py",
+ "start_time": "2026-08-18T05:46:46",
+ "last_update": "2026-08-18T05:47:01",
  "status": "COMPLETED"
 }
