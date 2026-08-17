@@ -12,10 +12,10 @@
   "cand_final(실패)": 1047.3863324656
  },
  "current_experiment": null,
- "current_hypothesis": "L0-T",
- "last_completed_experiment": "EXP019",
- "next_experiment": "EXP020",
- "experiments_completed": 18,
+ "current_hypothesis": "L0-U",
+ "last_completed_experiment": "EXP020",
+ "next_experiment": null,
+ "experiments_completed": 19,
  "signals_active": [
   "D current-state",
   "residual hand differential",
@@ -33,16 +33,16 @@
   "note": "30회차 실패로 동결. TYPE B 변경 금지"
  },
  "submission_candidates": [],
- "research_space_status": "LEVEL 0~4 소진 · 자료생성 원리로 닫힘 근거 확보",
- "updated_at": "2026-08-18T05:48:35",
+ "research_space_status": "PROJECT_RESEARCH_EXHAUSTED (재개 조건 3개 명시)",
+ "updated_at": "2026-08-18T05:51:12",
  "research_level": 4,
  "level_name": "ALL LEVELS SWEPT",
  "levels": {
-  "0": "EXHAUSTED (246 국면 전수 + 포트폴리오 반증)",
+  "0": "EXHAUSTED (단일 246 + 결합 6 + 포트폴리오 p=0.960)",
   "1": "EXHAUSTED (표현 9면)",
   "2": "EXHAUSTED (분산 0.9999 / 편향 전이 0)",
-  "3": "EXHAUSTED (표본가중 단조 악화, 창은 D 가 묶음)",
-  "4": "MAPPED (천장 분해 + 규정4 값 +83.5)"
+  "3": "EXHAUSTED (표본가중 단조 악화)",
+  "4": "MAPPED (+169.0 = 배치추론)"
  },
  "next_hypothesis": "H004",
  "next_hypothesis_priority": 4.0
