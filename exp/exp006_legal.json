@@ -1,0 +1,38 @@
+{
+ "\ud22c\uc218 \uc13c\ud130\ub9c1 (ILLEGAL, 2024 \ub0b4)": {
+  "cols": 4,
+  "corr": 0.018123243087443657,
+  "inc": 33.837623174842065,
+  "legal": false
+ },
+ "\uce74\uc6b4\ud2b8 \uc13c\ud130\ub9c1 (ILLEGAL, 2024 \ub0b4)": {
+  "cols": 4,
+  "corr": -0.001302374134074705,
+  "inc": -5.843564804173752,
+  "legal": false
+ },
+ "\ud22c\uc218 \uc13c\ud130\ub9c1 (LEGAL, \uacfc\uac70 \uc0c1\uc218)": {
+  "cols": 4,
+  "corr": 0.0024638062496937833,
+  "inc": -3.2865043062784025,
+  "legal": true
+ },
+ "\uce74\uc6b4\ud2b8 \uc13c\ud130\ub9c1 (LEGAL, \uacfc\uac70 \uc0c1\uc218)": {
+  "cols": 4,
+  "corr": -0.0012663074849794966,
+  "inc": -5.8225013357417765,
+  "legal": true
+ },
+ "LEGAL \ub458 \ub2e4": {
+  "cols": 8,
+  "corr": -8.288349884916734e-05,
+  "inc": -13.371386394728916,
+  "legal": true
+ },
+ "ILLEGAL \ub458 \ub2e4": {
+  "cols": 8,
+  "corr": 0.02756978102999473,
+  "inc": 80.24155661793907,
+  "legal": false
+ }
+}
