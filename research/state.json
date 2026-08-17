@@ -1,0 +1,38 @@
+{
+ "champion": {
+  "artifact": "submissions/cand_submit_3.zip",
+  "lb_score": 1057.3394030999,
+  "sha256": "82799a5cd6b056312eb50070d4d0078cd6a0a53ae09d6b26855277fae828d3e8",
+  "updated_at": "2026-08-18T02:50:23"
+ },
+ "lb_anchors": {
+  "C1": 1049.9225979712,
+  "C2": 1053.5950918323,
+  "C3": 1057.3394030999,
+  "cand_final(실패)": 1047.3863324656
+ },
+ "current_experiment": null,
+ "current_hypothesis": "H013",
+ "last_completed_experiment": "EXP003",
+ "next_experiment": "EXP004",
+ "experiments_completed": 3,
+ "signals_active": [
+  "D current-state",
+  "residual hand differential",
+  "2-strike differential",
+  "runner differential"
+ ],
+ "production_rules_frozen": {
+  "table_source": "직전 2시즌 OOF 잔차",
+  "k": {
+   "hand": 1000,
+   "2S": 1000,
+   "runner": 2000
+  },
+  "w": 1.0,
+  "note": "30회차 실패로 동결. TYPE B 변경 금지"
+ },
+ "submission_candidates": [],
+ "research_space_status": "EXHAUSTED (투수 x 이진 국면 family 전수 증명)",
+ "updated_at": "2026-08-18T03:48:41"
+}

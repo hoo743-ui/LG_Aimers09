@@ -1,0 +1,1599 @@
+{
+ "base": 958.1385662639348,
+ "placebo": -0.042473278247181646,
+ "gate": 3.0,
+ "all": [
+  {
+   "ctx": "lx_str_sh \ud558\uc70425%",
+   "frac": 0.5151770957014994,
+   "oracle": 12.053054456526525,
+   "minus_placebo": 12.095527734773706
+  },
+  {
+   "ctx": "lx_ball_sh \ud558\uc70425%",
+   "frac": 0.5152796569719968,
+   "oracle": 11.85588200780694,
+   "minus_placebo": 11.898355286054121
+  },
+  {
+   "ctx": "[\ub300\uc870] \uac19\uc740\uc190",
+   "frac": 0.484807125641501,
+   "oracle": 11.783141926470648,
+   "minus_placebo": 11.82561520471783
+  },
+  {
+   "ctx": "batter_hand==1",
+   "frac": 0.4724169352325577,
+   "oracle": 11.769122092437897,
+   "minus_placebo": 11.811595370685078
+  },
+  {
+   "ctx": "batter_hand==2",
+   "frac": 0.5275830647674423,
+   "oracle": 11.769122092437897,
+   "minus_placebo": 11.811595370685078
+  },
+  {
+   "ctx": "dx_succ_sh \ud558\uc70425%",
+   "frac": 0.5151021470807512,
+   "oracle": 11.678929597063984,
+   "minus_placebo": 11.721402875311165
+  },
+  {
+   "ctx": "lx_rev_sh \ud558\uc70425%",
+   "frac": 0.5162460997132229,
+   "oracle": 11.400205541435412,
+   "minus_placebo": 11.442678819682593
+  },
+  {
+   "ctx": "dx_mid_sh \ud558\uc70425%",
+   "frac": 0.5183564950869207,
+   "oracle": 11.328865588092526,
+   "minus_placebo": 11.371338866339707
+  },
+  {
+   "ctx": "tmh_offspeed_dev \uc0c1\uc70450%",
+   "frac": 0.39465576887423226,
+   "oracle": 9.371101916201724,
+   "minus_placebo": 9.413575194448905
+  },
+  {
+   "ctx": "tmh_breaking_dev \uc0c1\uc70450%",
+   "frac": 0.3969357848106758,
+   "oracle": 8.0017151737419,
+   "minus_placebo": 8.044188451989081
+  },
+  {
+   "ctx": "tmh_fastball_dev \uc0c1\uc70450%",
+   "frac": 0.3972237453009187,
+   "oracle": 7.059882134517011,
+   "minus_placebo": 7.102355412764193
+  },
+  {
+   "ctx": "tmh_speed_dev \uc0c1\uc70450%",
+   "frac": 0.3980166228151491,
+   "oracle": 7.059659919648084,
+   "minus_placebo": 7.102133197895266
+  },
+  {
+   "ctx": "tmh_offspeed_dev \uc0c1\uc70425%",
+   "frac": 0.19999842213430005,
+   "oracle": 2.580468415379528,
+   "minus_placebo": 2.6229416936267094
+  },
+  {
+   "ctx": "dx_succ_sh \uc0c1\uc70425%",
+   "frac": 0.24961440906957205,
+   "oracle": 2.270984918202089,
+   "minus_placebo": 2.3134581964492704
+  },
+  {
+   "ctx": "dx_mid_sh \uc0c1\uc70425%",
+   "frac": 0.24961440906957205,
+   "oracle": 2.1255564174199435,
+   "minus_placebo": 2.168029695667125
+  },
+  {
+   "ctx": "tmh_offspeed_dev \ud558\uc70425%",
+   "frac": 0.19862173431108412,
+   "oracle": 1.7010995415483876,
+   "minus_placebo": 1.7435728197955693
+  },
+  {
+   "ctx": "tmh_speed_dev \uc0c1\uc70425%",
+   "frac": 0.19736338641536524,
+   "oracle": 1.2904459788952636,
+   "minus_placebo": 1.3329192571424453
+  },
+  {
+   "ctx": "tmh_breaking_dev \ud558\uc70425%",
+   "frac": 0.2000852047477979,
+   "oracle": 1.2509085063865086,
+   "minus_placebo": 1.2933817846336904
+  },
+  {
+   "ctx": "tmc_offspeed_dev \uc0c1\uc70450%",
+   "frac": 0.38692817160867354,
+   "oracle": 1.1985437488662,
+   "minus_placebo": 1.2410170271133818
+  },
+  {
+   "ctx": "asof_pitcher_prev1_game_success_rate \uc0c1\uc70450%",
+   "frac": 0.49301597194554786,
+   "oracle": 1.193684958564745,
+   "minus_placebo": 1.2361582368119268
+  },
+  {
+   "ctx": "tmc_breaking_dev \uc0c1\uc70450%",
+   "frac": 0.3867112150749289,
+   "oracle": 1.0148929475603836,
+   "minus_placebo": 1.0573662258075653
+  },
+  {
+   "ctx": "tmh_breaking_dev \uc0c1\uc70425%",
+   "frac": 0.20053489647228676,
+   "oracle": 0.8287524376814872,
+   "minus_placebo": 0.8712257159286688
+  },
+  {
+   "ctx": "tmc_fastball_dev \uc0c1\uc70450%",
+   "frac": 0.3865613178334326,
+   "oracle": 0.7821265295755211,
+   "minus_placebo": 0.8245998078227027
+  },
+  {
+   "ctx": "tmh_fastball_dev \uc0c1\uc70425%",
+   "frac": 0.1994422244750638,
+   "oracle": 0.679578493744657,
+   "minus_placebo": 0.7220517719918386
+  },
+  {
+   "ctx": "dx_succ_bs \ud558\uc70425%",
+   "frac": 0.24961440906957205,
+   "oracle": 0.6372895317522307,
+   "minus_placebo": 0.6797628099994123
+  },
+  {
+   "ctx": "tmc_speed_dev \uc0c1\uc70450%",
+   "frac": 0.38697156291542245,
+   "oracle": 0.6296727058020224,
+   "minus_placebo": 0.672145984049204
+  },
+  {
+   "ctx": "dx_mid_adv \ud558\uc70425%",
+   "frac": 0.716319470468271,
+   "oracle": 0.5023425745461054,
+   "minus_placebo": 0.544815852793287
+  },
+  {
+   "ctx": "lx_rev_bs \uc0c1\uc70450%",
+   "frac": 0.7147258261113105,
+   "oracle": 0.4999952151620164,
+   "minus_placebo": 0.542468493409198
+  },
+  {
+   "ctx": "dx_succ_bs \uc0c1\uc70450%",
+   "frac": 0.7146942687973113,
+   "oracle": 0.4757834005074528,
+   "minus_placebo": 0.5182566787546344
+  },
+  {
+   "ctx": "lx_str_bs \uc0c1\uc70450%",
+   "frac": 0.7140670671815769,
+   "oracle": 0.4619864928639572,
+   "minus_placebo": 0.5044597711111388
+  },
+  {
+   "ctx": "dx_succ_adv \ud558\uc70425%",
+   "frac": 0.7148362767103078,
+   "oracle": 0.45857831828050166,
+   "minus_placebo": 0.5010515965276833
+  },
+  {
+   "ctx": "dx_mid_bs \uc0c1\uc70450%",
+   "frac": 0.714666656147562,
+   "oracle": 0.44593511687469345,
+   "minus_placebo": 0.4884083951218751
+  },
+  {
+   "ctx": "lx_ball_bs \uc0c1\uc70450%",
+   "frac": 0.7155384269467904,
+   "oracle": 0.41370456373249453,
+   "minus_placebo": 0.4561778419796762
+  },
+  {
+   "ctx": "tmh_speed_dev \ud558\uc70425%",
+   "frac": 0.19814837460109583,
+   "oracle": 0.4044245003810829,
+   "minus_placebo": 0.4468977786282646
+  },
+  {
+   "ctx": "lx_rev_bs \ud558\uc70425%",
+   "frac": 0.24961440906957205,
+   "oracle": 0.32963755248454163,
+   "minus_placebo": 0.3721108307317233
+  },
+  {
+   "ctx": "lx_str_sh \uc0c1\uc70425%",
+   "frac": 0.24961440906957205,
+   "oracle": 0.295865533601841,
+   "minus_placebo": 0.33833881184902265
+  },
+  {
+   "ctx": "lx_rev_sh \uc0c1\uc70425%",
+   "frac": 0.24961440906957205,
+   "oracle": 0.2612004323131032,
+   "minus_placebo": 0.30367371056028486
+  },
+  {
+   "ctx": "dx_mid_adv \uc0c1\uc70425%",
+   "frac": 0.24961440906957205,
+   "oracle": 0.1811284949393439,
+   "minus_placebo": 0.22360177318652555
+  },
+  {
+   "ctx": "tmc_offspeed_dev \uc0c1\uc70425%",
+   "frac": 0.19416820837294432,
+   "oracle": 0.16392177540160446,
+   "minus_placebo": 0.2063950536487861
+  },
+  {
+   "ctx": "asof_batter_middle_rate \uc0c1\uc70425%",
+   "frac": 0.24991420355256463,
+   "oracle": 0.14083413490209296,
+   "minus_placebo": 0.1833074131492746
+  },
+  {
+   "ctx": "lx_str_bs \ud558\uc70425%",
+   "frac": 0.24961440906957205,
+   "oracle": 0.12501042431131282,
+   "minus_placebo": 0.16748370255849446
+  },
+  {
+   "ctx": "asof_pitcher_prev3_game_success_rate \uc0c1\uc70450%",
+   "frac": 0.4940376399862726,
+   "oracle": 0.1187287697289321,
+   "minus_placebo": 0.16120204797611373
+  },
+  {
+   "ctx": "dx_mid_bs \ud558\uc70425%",
+   "frac": 0.24961440906957205,
+   "oracle": 0.05960214523554441,
+   "minus_placebo": 0.10207542348272605
+  },
+  {
+   "ctx": "tmh_fastball_dev \ud558\uc70425%",
+   "frac": 0.2006019557645351,
+   "oracle": 0.009848888057149452,
+   "minus_placebo": 0.0523221663043311
+  },
+  {
+   "ctx": "dx_succ_adv \uc0c1\uc70425%",
+   "frac": 0.24961440906957205,
+   "oracle": -0.09416292138553217,
+   "minus_placebo": -0.051689643138350526
+  },
+  {
+   "ctx": "lx_ball_bs \ud558\uc70425%",
+   "frac": 0.24961440906957205,
+   "oracle": -0.11010347392596032,
+   "minus_placebo": -0.06763019567877868
+  },
+  {
+   "ctx": "lx_ball_sh \uc0c1\uc70425%",
+   "frac": 0.24961440906957205,
+   "oracle": -0.1158613065491636,
+   "minus_placebo": -0.07338802830198196
+  },
+  {
+   "ctx": "tmc_breaking_dev \uc0c1\uc70425%",
+   "frac": 0.19364356802770732,
+   "oracle": -0.12150596432195471,
+   "minus_placebo": -0.07903268607477307
+  },
+  {
+   "ctx": "[\ub300\uc870] 2\uc2a4\ud2b8\ub77c\uc774\ud06c",
+   "frac": 0.2878224269941264,
+   "oracle": -0.15776164935709858,
+   "minus_placebo": -0.11528837110991694
+  },
+  {
+   "ctx": "strikes_before==2",
+   "frac": 0.2878224269941264,
+   "oracle": -0.15776164935709858,
+   "minus_placebo": -0.11528837110991694
+  },
+  {
+   "ctx": "k2_rev_2s \ud558\uc70425%",
+   "frac": 0.7111716836221486,
+   "oracle": -0.15945537944764965,
+   "minus_placebo": -0.11698210120046801
+  },
+  {
+   "ctx": "k2_ball_2s \ud558\uc70425%",
+   "frac": 0.710911335781655,
+   "oracle": -0.1845810029835775,
+   "minus_placebo": -0.14210772473639585
+  },
+  {
+   "ctx": "tmc_offspeed_dev \ud558\uc70425%",
+   "frac": 0.1936001767209584,
+   "oracle": -0.1947705759822611,
+   "minus_placebo": -0.15229729773507947
+  },
+  {
+   "ctx": "cur_bmid \ud558\uc70425%",
+   "frac": 0.24958285175557282,
+   "oracle": -0.2110177768028052,
+   "minus_placebo": -0.16854449855562356
+  },
+  {
+   "ctx": "li \uc0c1\uc70450%",
+   "frac": 0.5048460200310051,
+   "oracle": -0.2337773941501382,
+   "minus_placebo": -0.19130411590295657
+  },
+  {
+   "ctx": "cur_bsucc \uc0c1\uc70425%",
+   "frac": 0.24958285175557282,
+   "oracle": -0.24678410226692904,
+   "minus_placebo": -0.2043108240197474
+  },
+  {
+   "ctx": "asof_pitcher_prev5_game_success_rate \uc0c1\uc70450%",
+   "frac": 0.4929213000035502,
+   "oracle": -0.2948791585519075,
+   "minus_placebo": -0.2524058803047258
+  },
+  {
+   "ctx": "k2_rev_2s \uc0c1\uc70425%",
+   "frac": 0.24961440906957205,
+   "oracle": -0.29955776206008977,
+   "minus_placebo": -0.2570844838129081
+  },
+  {
+   "ctx": "asof_pitcher_prev3_game_success_rate \uc0c1\uc70425%",
+   "frac": 0.2465415156188981,
+   "oracle": -0.30469148397207846,
+   "minus_placebo": -0.2622182057248968
+  },
+  {
+   "ctx": "asof_pitcher_prev5_game_middle_rate \uc0c1\uc70450%",
+   "frac": 0.4930475292595471,
+   "oracle": -0.3396268618536169,
+   "minus_placebo": -0.29715358360643523
+  },
+  {
+   "ctx": "asof_pitcher_prev3_game_middle_rate \uc0c1\uc70450%",
+   "frac": 0.4941086439427708,
+   "oracle": -0.40789665041734224,
+   "minus_placebo": -0.3654233721701606
+  },
+  {
+   "ctx": "k2_rev_2slow \ud558\uc70425%",
+   "frac": 0.8388249634132391,
+   "oracle": -0.4640745472694334,
+   "minus_placebo": -0.42160126902225176
+  },
+  {
+   "ctx": "run_bot_before \ud558\uc70425%",
+   "frac": 0.32060653157506497,
+   "oracle": -0.4746409000309768,
+   "minus_placebo": -0.43216762178379514
+  },
+  {
+   "ctx": "lx_rev_bs \uc0c1\uc70425%",
+   "frac": 0.24961440906957205,
+   "oracle": -0.4827204249298802,
+   "minus_placebo": -0.44024714668269854
+  },
+  {
+   "ctx": "tmc_speed_dev \ud558\uc70425%",
+   "frac": 0.1932885482452161,
+   "oracle": -0.4858881258656993,
+   "minus_placebo": -0.4434148476185176
+  },
+  {
+   "ctx": "k2_ball_2slow \ud558\uc70425%",
+   "frac": 0.8387618487852406,
+   "oracle": -0.5099438290889111,
+   "minus_placebo": -0.46747055084172945
+  },
+  {
+   "ctx": "tmc_fastball_dev \uc0c1\uc70425%",
+   "frac": 0.1939196945252005,
+   "oracle": -0.5184228593850548,
+   "minus_placebo": -0.47594958113787317
+  },
+  {
+   "ctx": "away_win_expectancy \uc0c1\uc70450%",
+   "frac": 0.5041359804660226,
+   "oracle": -0.5393105451003066,
+   "minus_placebo": -0.49683726685312496
+  },
+  {
+   "ctx": "tmc_speed_dev \uc0c1\uc70425%",
+   "frac": 0.19335560753746445,
+   "oracle": -0.5476682691964925,
+   "minus_placebo": -0.5051949909493109
+  },
+  {
+   "ctx": "asof_batter_middle_rate \uc0c1\uc70450%",
+   "frac": 0.4998520750906287,
+   "oracle": -0.5647225261013773,
+   "minus_placebo": -0.5222492478541957
+  },
+  {
+   "ctx": "cur_bb \uc0c1\uc70425%",
+   "frac": 0.24961440906957205,
+   "oracle": -0.5968911486895649,
+   "minus_placebo": -0.5544178704423833
+  },
+  {
+   "ctx": "game_month==9",
+   "frac": 0.13137704284299842,
+   "oracle": -0.6174756719346988,
+   "minus_placebo": -0.5750023936875172
+  },
+  {
+   "ctx": "cur_logn_bat \uc0c1\uc70425%",
+   "frac": 0.250182440721558,
+   "oracle": -0.6602465129179791,
+   "minus_placebo": -0.6177732346707975
+  },
+  {
+   "ctx": "runner_on_1b==0",
+   "frac": 0.6465107472377488,
+   "oracle": -0.6670395609244224,
+   "minus_placebo": -0.6245662826772408
+  },
+  {
+   "ctx": "runner_on_1b==1",
+   "frac": 0.3534892527622511,
+   "oracle": -0.6670395609244224,
+   "minus_placebo": -0.6245662826772408
+  },
+  {
+   "ctx": "home_win_expectancy \uc0c1\uc70450%",
+   "frac": 0.5067670715207075,
+   "oracle": -0.6705137811551367,
+   "minus_placebo": -0.6280405029079551
+  },
+  {
+   "ctx": "outs_before==2",
+   "frac": 0.32617245283167723,
+   "oracle": -0.6874955205532842,
+   "minus_placebo": -0.6450222423061026
+  },
+  {
+   "ctx": "k2_ball_2s \uc0c1\uc70425%",
+   "frac": 0.24961440906957205,
+   "oracle": -0.7058427087678183,
+   "minus_placebo": -0.6633694305206367
+  },
+  {
+   "ctx": "dx_succ_bs \uc0c1\uc70425%",
+   "frac": 0.24961440906957205,
+   "oracle": -0.7880562421978539,
+   "minus_placebo": -0.7455829639506723
+  },
+  {
+   "ctx": "dx_mid_onb \ud558\uc70425%",
+   "frac": 0.5205576177383662,
+   "oracle": -0.8223165067347509,
+   "minus_placebo": -0.7798432284875693
+  },
+  {
+   "ctx": "tmc_fastball_dev \ud558\uc70425%",
+   "frac": 0.19465340207568232,
+   "oracle": -0.8273789990456635,
+   "minus_placebo": -0.7849057207984819
+  },
+  {
+   "ctx": "lx_str_bs \uc0c1\uc70425%",
+   "frac": 0.24961440906957205,
+   "oracle": -0.8690797872847043,
+   "minus_placebo": -0.8266065090375226
+  },
+  {
+   "ctx": "li \ud558\uc70425%",
+   "frac": 0.25309754760223585,
+   "oracle": -0.8809335405100001,
+   "minus_placebo": -0.8384602622628184
+  },
+  {
+   "ctx": "dx_succ_onb \ud558\uc70425%",
+   "frac": 0.5182144871739242,
+   "oracle": -0.9003372430897798,
+   "minus_placebo": -0.8578639648425982
+  },
+  {
+   "ctx": "strikes_before==0",
+   "frac": 0.4116691057840612,
+   "oracle": -0.9175564556867357,
+   "minus_placebo": -0.8750831774395541
+  },
+  {
+   "ctx": "outs_before==1",
+   "frac": 0.33051947283506966,
+   "oracle": -0.9216447341087814,
+   "minus_placebo": -0.8791714558615998
+  },
+  {
+   "ctx": "run_top_before \uc0c1\uc70425%",
+   "frac": 0.317817653950384,
+   "oracle": -0.935137737474065,
+   "minus_placebo": -0.8926644592268834
+  },
+  {
+   "ctx": "[\ub300\uc870] \uc8fc\uc790\uc788\uc74c",
+   "frac": 0.4807520107926014,
+   "oracle": -0.9722396794822998,
+   "minus_placebo": -0.9297664012351182
+  },
+  {
+   "ctx": "base_state==___",
+   "frac": 0.5192479892073986,
+   "oracle": -0.9722396794822998,
+   "minus_placebo": -0.9297664012351182
+  },
+  {
+   "ctx": "num_runners_on==0",
+   "frac": 0.5192479892073986,
+   "oracle": -0.9722396794822998,
+   "minus_placebo": -0.9297664012351182
+  },
+  {
+   "ctx": "asof_pitcher_fastball_rate \uc0c1\uc70450%",
+   "frac": 0.49984813042637877,
+   "oracle": -0.9789010973352106,
+   "minus_placebo": -0.936427819088029
+  },
+  {
+   "ctx": "tmc_n \uc0c1\uc70425%",
+   "frac": 0.1937816312764539,
+   "oracle": -0.9946154659775175,
+   "minus_placebo": -0.9521421877303359
+  },
+  {
+   "ctx": "tmc_breaking_dev \ud558\uc70425%",
+   "frac": 0.19331616089496542,
+   "oracle": -1.032654929096907,
+   "minus_placebo": -0.9901816508497253
+  },
+  {
+   "ctx": "dx_mid_onb \uc0c1\uc70425%",
+   "frac": 0.24961440906957205,
+   "oracle": -1.03606361988966,
+   "minus_placebo": -0.9935903416424784
+  },
+  {
+   "ctx": "cur_logn_mix \ud558\uc70425%",
+   "frac": 0.25082936565854197,
+   "oracle": -1.0469786275295974,
+   "minus_placebo": -1.0045053492824156
+  },
+  {
+   "ctx": "cur_logn_pitch \ud558\uc70425%",
+   "frac": 0.25082936565854197,
+   "oracle": -1.0469786275295974,
+   "minus_placebo": -1.0045053492824156
+  },
+  {
+   "ctx": "dx_succ_onb \uc0c1\uc70425%",
+   "frac": 0.24961440906957205,
+   "oracle": -1.0795459361042958,
+   "minus_placebo": -1.037072657857114
+  },
+  {
+   "ctx": "game_dayofweek==3",
+   "frac": 0.16835827018583313,
+   "oracle": -1.1698076547481833,
+   "minus_placebo": -1.1273343765010015
+  },
+  {
+   "ctx": "dx_mid_bs \uc0c1\uc70425%",
+   "frac": 0.24961835373382193,
+   "oracle": -1.191872260868081,
+   "minus_placebo": -1.1493989826208992
+  },
+  {
+   "ctx": "tmc_n \uc0c1\uc70450%",
+   "frac": 0.3868413889951757,
+   "oracle": -1.2481839036825022,
+   "minus_placebo": -1.2057106254353205
+  },
+  {
+   "ctx": "asof_pitcher_prev1_game_success_rate \uc0c1\uc70425%",
+   "frac": 0.2465415156188981,
+   "oracle": -1.3193034082589747,
+   "minus_placebo": -1.276830130011793
+  },
+  {
+   "ctx": "lx_ball_bs \uc0c1\uc70425%",
+   "frac": 0.24961440906957205,
+   "oracle": -1.3493651899465249,
+   "minus_placebo": -1.3068919116993432
+  },
+  {
+   "ctx": "tmh_n \uc0c1\uc70450%",
+   "frac": 0.3968529468614279,
+   "oracle": -1.352335763275505,
+   "minus_placebo": -1.3098624850283234
+  },
+  {
+   "ctx": "run_total_before \uc0c1\uc70450%",
+   "frac": 0.5720591541850916,
+   "oracle": -1.363832202815388,
+   "minus_placebo": -1.3213589245682063
+  },
+  {
+   "ctx": "run_bot_before \uc0c1\uc70450%",
+   "frac": 0.5293739423368979,
+   "oracle": -1.381654431665197,
+   "minus_placebo": -1.3391811534180154
+  },
+  {
+   "ctx": "cur_logn_mix \uc0c1\uc70425%",
+   "frac": 0.2500522668013112,
+   "oracle": -1.4692241257405385,
+   "minus_placebo": -1.4267508474933568
+  },
+  {
+   "ctx": "cur_logn_pitch \uc0c1\uc70425%",
+   "frac": 0.2500522668013112,
+   "oracle": -1.4692241257405385,
+   "minus_placebo": -1.4267508474933568
+  },
+  {
+   "ctx": "game_month==7",
+   "frac": 0.13045004674427135,
+   "oracle": -1.4771306610809916,
+   "minus_placebo": -1.4346573828338098
+  },
+  {
+   "ctx": "asof_batter_success_rate \uc0c1\uc70450%",
+   "frac": 0.49982840710512927,
+   "oracle": -1.4889725260569548,
+   "minus_placebo": -1.4464992478097731
+  },
+  {
+   "ctx": "balls_before==0",
+   "frac": 0.44525003254348006,
+   "oracle": -1.5045154078062524,
+   "minus_placebo": -1.4620421295590706
+  },
+  {
+   "ctx": "strikes_before==1",
+   "frac": 0.3005084672218124,
+   "oracle": -1.5237330414573762,
+   "minus_placebo": -1.4812597632101945
+  },
+  {
+   "ctx": "away_win_expectancy \ud558\uc70425%",
+   "frac": 0.2508530336440414,
+   "oracle": -1.5740261470276664,
+   "minus_placebo": -1.5315528687804847
+  },
+  {
+   "ctx": "home_win_expectancy \uc0c1\uc70425%",
+   "frac": 0.2508530336440414,
+   "oracle": -1.5740261470276664,
+   "minus_placebo": -1.5315528687804847
+  },
+  {
+   "ctx": "balls_before==3",
+   "frac": 0.08285767256919928,
+   "oracle": -1.6103526945643125,
+   "minus_placebo": -1.5678794163171308
+  },
+  {
+   "ctx": "asof_batter_success_rate \ud558\uc70425%",
+   "frac": 0.24991420355256463,
+   "oracle": -1.6128437581602384,
+   "minus_placebo": -1.5703704799130567
+  },
+  {
+   "ctx": "score_diff_pitcher_team \uc0c1\uc70450%",
+   "frac": 0.6278564299999606,
+   "oracle": -1.6155253638896738,
+   "minus_placebo": -1.573052085642492
+  },
+  {
+   "ctx": "away_win_expectancy \uc0c1\uc70425%",
+   "frac": 0.25076230636629365,
+   "oracle": -1.6743423280814795,
+   "minus_placebo": -1.6318690498342978
+  },
+  {
+   "ctx": "home_win_expectancy \ud558\uc70425%",
+   "frac": 0.25076230636629365,
+   "oracle": -1.6743423280814795,
+   "minus_placebo": -1.6318690498342978
+  },
+  {
+   "ctx": "cur_os \uc0c1\uc70425%",
+   "frac": 0.24961440906957205,
+   "oracle": -1.6751287061613311,
+   "minus_placebo": -1.6326554279141494
+  },
+  {
+   "ctx": "cur_str \ud558\uc70425%",
+   "frac": 0.24961440906957205,
+   "oracle": -1.6770782137792821,
+   "minus_placebo": -1.6346049355321004
+  },
+  {
+   "ctx": "run_bot_before \uc0c1\uc70425%",
+   "frac": 0.31067386699381083,
+   "oracle": -1.7220479648379978,
+   "minus_placebo": -1.679574686590816
+  },
+  {
+   "ctx": "inning \uc0c1\uc70425%",
+   "frac": 0.32818028693487755,
+   "oracle": -1.7366837185609256,
+   "minus_placebo": -1.694210440313744
+  },
+  {
+   "ctx": "asof_pitcher_prev5_game_middle_rate \uc0c1\uc70425%",
+   "frac": 0.24641923102715113,
+   "oracle": -1.74200721406487,
+   "minus_placebo": -1.6995339358176882
+  },
+  {
+   "ctx": "asof_pitcher_strike_rate \uc0c1\uc70425%",
+   "frac": 0.24993392687381413,
+   "oracle": -1.7512903580039847,
+   "minus_placebo": -1.708817079756803
+  },
+  {
+   "ctx": "asof_batter_n \uc0c1\uc70425%",
+   "frac": 0.2500562114655611,
+   "oracle": -1.7742347774085374,
+   "minus_placebo": -1.7317614991613557
+  },
+  {
+   "ctx": "cur_ball \uc0c1\uc70450%",
+   "frac": 0.4992288181391441,
+   "oracle": -1.8036663065869334,
+   "minus_placebo": -1.7611930283397517
+  },
+  {
+   "ctx": "score_diff_home \uc0c1\uc70425%",
+   "frac": 0.2659137617501686,
+   "oracle": -1.8094871875975969,
+   "minus_placebo": -1.7670139093504151
+  },
+  {
+   "ctx": "tmh_n \uc0c1\uc70425%",
+   "frac": 0.19798269870259994,
+   "oracle": -1.842418631793521,
+   "minus_placebo": -1.7999453535463392
+  },
+  {
+   "ctx": "asof_pitcher_n \uc0c1\uc70450%",
+   "frac": 0.5001360909166216,
+   "oracle": -1.8490071314652141,
+   "minus_placebo": -1.8065338532180324
+  },
+  {
+   "ctx": "asof_pitcher_pitchmix_n \uc0c1\uc70450%",
+   "frac": 0.5001360909166216,
+   "oracle": -1.8490071314652141,
+   "minus_placebo": -1.8065338532180324
+  },
+  {
+   "ctx": "balls_before==2",
+   "frac": 0.17150611225725523,
+   "oracle": -1.8496929959372892,
+   "minus_placebo": -1.8072197176901075
+  },
+  {
+   "ctx": "asof_pitcher_prev5_game_success_rate \uc0c1\uc70425%",
+   "frac": 0.24715293857763296,
+   "oracle": -1.859698418096059,
+   "minus_placebo": -1.8172251398488772
+  },
+  {
+   "ctx": "score_diff_pitcher_team \ud558\uc70425%",
+   "frac": 0.2700438252198164,
+   "oracle": -1.8633021648925023,
+   "minus_placebo": -1.8208288866453206
+  },
+  {
+   "ctx": "score_diff_home \ud558\uc70425%",
+   "frac": 0.28573569960592804,
+   "oracle": -1.8683754706376021,
+   "minus_placebo": -1.8259021923904204
+  },
+  {
+   "ctx": "li \uc0c1\uc70425%",
+   "frac": 0.2503796739340531,
+   "oracle": -1.8942723349466632,
+   "minus_placebo": -1.8517990566994815
+  },
+  {
+   "ctx": "cur_os \uc0c1\uc70450%",
+   "frac": 0.4992682647816431,
+   "oracle": -1.9308948699779194,
+   "minus_placebo": -1.8884215917307376
+  },
+  {
+   "ctx": "asof_pitcher_middle_rate \ud558\uc70425%",
+   "frac": 0.24992603754531434,
+   "oracle": -1.9406444224939605,
+   "minus_placebo": -1.8981711442467788
+  },
+  {
+   "ctx": "cur_bmid \uc0c1\uc70425%",
+   "frac": 0.24958285175557282,
+   "oracle": -1.9526034910905992,
+   "minus_placebo": -1.9101302128434174
+  },
+  {
+   "ctx": "cur_ball \uc0c1\uc70425%",
+   "frac": 0.24961835373382193,
+   "oracle": -1.952692219467167,
+   "minus_placebo": -1.9102189412199853
+  },
+  {
+   "ctx": "num_runners_on==2",
+   "frac": 0.14190140706173793,
+   "oracle": -1.9585238188780068,
+   "minus_placebo": -1.916050540630825
+  },
+  {
+   "ctx": "game_dayofweek==6",
+   "frac": 0.16519070479316153,
+   "oracle": -1.9927252961686008,
+   "minus_placebo": -1.9502520179214191
+  },
+  {
+   "ctx": "game_dayofweek==1",
+   "frac": 0.16238604851148095,
+   "oracle": -2.010373726420994,
+   "minus_placebo": -1.9679004481738123
+  },
+  {
+   "ctx": "cur_bsucc \ud558\uc70425%",
+   "frac": 0.24959468574832253,
+   "oracle": -2.0178383167981337,
+   "minus_placebo": -1.975365038550952
+  },
+  {
+   "ctx": "asof_batter_n \uc0c1\uc70450%",
+   "frac": 0.5000532529673737,
+   "oracle": -2.032559997916678,
+   "minus_placebo": -1.9900867196694965
+  },
+  {
+   "ctx": "asof_batter_middle_rate \ud558\uc70425%",
+   "frac": 0.24995365019506366,
+   "oracle": -2.0695869346249083,
+   "minus_placebo": -2.027113656377727
+  },
+  {
+   "ctx": "runner_on_2b==0",
+   "frac": 0.7793630945102108,
+   "oracle": -2.092059330507823,
+   "minus_placebo": -2.0495860522606413
+  },
+  {
+   "ctx": "runner_on_2b==1",
+   "frac": 0.22063690548978923,
+   "oracle": -2.092059330507823,
+   "minus_placebo": -2.0495860522606413
+  },
+  {
+   "ctx": "asof_batter_success_rate \uc0c1\uc70425%",
+   "frac": 0.24992603754531434,
+   "oracle": -2.103433501492532,
+   "minus_placebo": -2.0609602232453503
+  },
+  {
+   "ctx": "balls_before==1",
+   "frac": 0.30038618263006545,
+   "oracle": -2.104398747162236,
+   "minus_placebo": -2.0619254689150543
+  },
+  {
+   "ctx": "asof_pitcher_ball_rate \uc0c1\uc70425%",
+   "frac": 0.24993787153806404,
+   "oracle": -2.1279351595680964,
+   "minus_placebo": -2.085461881320915
+  },
+  {
+   "ctx": "base_state==12_",
+   "frac": 0.08652226565735857,
+   "oracle": -2.1288181562675845,
+   "minus_placebo": -2.086344878020403
+  },
+  {
+   "ctx": "runner_on_3b==0",
+   "frac": 0.8851392663713428,
+   "oracle": -2.1556571062500325,
+   "minus_placebo": -2.113183828002851
+  },
+  {
+   "ctx": "runner_on_3b==1",
+   "frac": 0.1148607336286572,
+   "oracle": -2.1556571062500325,
+   "minus_placebo": -2.113183828002851
+  },
+  {
+   "ctx": "asof_pitcher_prev3_game_middle_rate \uc0c1\uc70425%",
+   "frac": 0.2483797291593526,
+   "oracle": -2.193394736407072,
+   "minus_placebo": -2.1509214581598903
+  },
+  {
+   "ctx": "inning \ud558\uc70425%",
+   "frac": 0.336322073946676,
+   "oracle": -2.2373006186921884,
+   "minus_placebo": -2.194827340445007
+  },
+  {
+   "ctx": "run_total_before \uc0c1\uc70425%",
+   "frac": 0.2845167983527082,
+   "oracle": -2.2429984219486414,
+   "minus_placebo": -2.20052514370146
+  },
+  {
+   "ctx": "cur_bb \uc0c1\uc70450%",
+   "frac": 0.499232762803394,
+   "oracle": -2.247777250132458,
+   "minus_placebo": -2.2053039718852765
+  },
+  {
+   "ctx": "top_bottom==B",
+   "frac": 0.49101997183509727,
+   "oracle": -2.2509926835706437,
+   "minus_placebo": -2.2085194053234622
+  },
+  {
+   "ctx": "top_bottom==T",
+   "frac": 0.5089800281649027,
+   "oracle": -2.2509926835706437,
+   "minus_placebo": -2.2085194053234622
+  },
+  {
+   "ctx": "cur_fb \ud558\uc70425%",
+   "frac": 0.24961440906957205,
+   "oracle": -2.2522948158494955,
+   "minus_placebo": -2.209821537602314
+  },
+  {
+   "ctx": "score_diff_home \uc0c1\uc70450%",
+   "frac": 0.5994903493789127,
+   "oracle": -2.270541121984593,
+   "minus_placebo": -2.2280678437374113
+  },
+  {
+   "ctx": "outs_before==0",
+   "frac": 0.3433080743332531,
+   "oracle": -2.279001791877022,
+   "minus_placebo": -2.2365285136298403
+  },
+  {
+   "ctx": "base_state==1_3",
+   "frac": 0.033419195525172876,
+   "oracle": -2.280270913244408,
+   "minus_placebo": -2.2377976349972264
+  },
+  {
+   "ctx": "cur_str \uc0c1\uc70425%",
+   "frac": 0.24961440906957205,
+   "oracle": -2.2843099176809574,
+   "minus_placebo": -2.241836639433776
+  },
+  {
+   "ctx": "inning \uc0c1\uc70450%",
+   "frac": 0.5531997144063083,
+   "oracle": -2.3071103684774243,
+   "minus_placebo": -2.264637090230243
+  },
+  {
+   "ctx": "base_state==1__",
+   "frac": 0.20038105456654057,
+   "oracle": -2.3391808203673463,
+   "minus_placebo": -2.296707542120165
+  },
+  {
+   "ctx": "score_diff_pitcher_team \uc0c1\uc70425%",
+   "frac": 0.28160563613628026,
+   "oracle": -2.3660675792135635,
+   "minus_placebo": -2.323594300966382
+  },
+  {
+   "ctx": "asof_pitcher_prev1_game_middle_rate \uc0c1\uc70450%",
+   "frac": 0.5141554276607746,
+   "oracle": -2.375696576827295,
+   "minus_placebo": -2.3332232985801133
+  },
+  {
+   "ctx": "cur_rev \ud558\uc70425%",
+   "frac": 0.24961440906957205,
+   "oracle": -2.406240981889937,
+   "minus_placebo": -2.3637677036427553
+  },
+  {
+   "ctx": "cur_rev \uc0c1\uc70425%",
+   "frac": 0.24961440906957205,
+   "oracle": -2.4110457945699864,
+   "minus_placebo": -2.368572516322805
+  },
+  {
+   "ctx": "cur_bsucc \uc0c1\uc70450%",
+   "frac": 0.49916570351114564,
+   "oracle": -2.4152809965495408,
+   "minus_placebo": -2.3728077183023593
+  },
+  {
+   "ctx": "cur_bmid \uc0c1\uc70450%",
+   "frac": 0.49916570351114564,
+   "oracle": -2.451230086507394,
+   "minus_placebo": -2.4087568082602124
+  },
+  {
+   "ctx": "asof_pitcher_offspeed_rate \uc0c1\uc70450%",
+   "frac": 0.49984024109787895,
+   "oracle": -2.4543871963873016,
+   "minus_placebo": -2.41191391814012
+  },
+  {
+   "ctx": "tmh_n \ud558\uc70425%",
+   "frac": 0.19819176590784476,
+   "oracle": -2.458505380840279,
+   "minus_placebo": -2.4160321025930975
+  },
+  {
+   "ctx": "base_state==123",
+   "frac": 0.033166737013179126,
+   "oracle": -2.4636402315856003,
+   "minus_placebo": -2.421166953338419
+  },
+  {
+   "ctx": "num_runners_on==3",
+   "frac": 0.033166737013179126,
+   "oracle": -2.4636402315856003,
+   "minus_placebo": -2.421166953338419
+  },
+  {
+   "ctx": "asof_batter_n \ud558\uc70425%",
+   "frac": 0.2500522668013112,
+   "oracle": -2.5331023496413536,
+   "minus_placebo": -2.490629071394172
+  },
+  {
+   "ctx": "num_runners_on==1",
+   "frac": 0.3056838667176843,
+   "oracle": -2.5332131122414694,
+   "minus_placebo": -2.490739833994288
+  },
+  {
+   "ctx": "cur_logn_bat \uc0c1\uc70450%",
+   "frac": 0.5004161620783647,
+   "oracle": -2.5391584455037446,
+   "minus_placebo": -2.496685167256563
+  },
+  {
+   "ctx": "game_month==6",
+   "frac": 0.17559278442015408,
+   "oracle": -2.539624445632512,
+   "minus_placebo": -2.4971511673853306
+  },
+  {
+   "ctx": "asof_pitcher_breaking_rate \uc0c1\uc70425%",
+   "frac": 0.24992209288106443,
+   "oracle": -2.542837270770633,
+   "minus_placebo": -2.5003639925234515
+  },
+  {
+   "ctx": "cur_mid \uc0c1\uc70425%",
+   "frac": 0.24961440906957205,
+   "oracle": -2.5814977542140696,
+   "minus_placebo": -2.539024475966888
+  },
+  {
+   "ctx": "asof_pitcher_prev3_game_success_rate \ud558\uc70425%",
+   "frac": 0.24690836939413902,
+   "oracle": -2.5868258028272066,
+   "minus_placebo": -2.544352524580025
+  },
+  {
+   "ctx": "cur_fb \uc0c1\uc70450%",
+   "frac": 0.4992288181391441,
+   "oracle": -2.6141419787016957,
+   "minus_placebo": -2.5716687004545142
+  },
+  {
+   "ctx": "asof_pitcher_prev3_game_middle_rate \ud558\uc70425%",
+   "frac": 0.248726859613344,
+   "oracle": -2.6580051882983753,
+   "minus_placebo": -2.615531910051194
+  },
+  {
+   "ctx": "asof_pitcher_middle_rate \uc0c1\uc70450%",
+   "frac": 0.49985996441912844,
+   "oracle": -2.663869846864145,
+   "minus_placebo": -2.6213965686169636
+  },
+  {
+   "ctx": "cur_str \uc0c1\uc70450%",
+   "frac": 0.4992288181391441,
+   "oracle": -2.6764257449992783,
+   "minus_placebo": -2.633952466752097
+  },
+  {
+   "ctx": "game_dayofweek==5",
+   "frac": 0.1576800640613474,
+   "oracle": -2.6921060286332477,
+   "minus_placebo": -2.649632750386066
+  },
+  {
+   "ctx": "cur_mid \uc0c1\uc70450%",
+   "frac": 0.4992288181391441,
+   "oracle": -2.694763838797712,
+   "minus_placebo": -2.6522905605505307
+  },
+  {
+   "ctx": "game_month==5",
+   "frac": 0.17387291080719663,
+   "oracle": -2.718713265605743,
+   "minus_placebo": -2.6762399873585614
+  },
+  {
+   "ctx": "asof_pitcher_prev5_game_middle_rate \ud558\uc70425%",
+   "frac": 0.24766968959437016,
+   "oracle": -2.753243813990366,
+   "minus_placebo": -2.7107705357431846
+  },
+  {
+   "ctx": "run_total_before \ud558\uc70425%",
+   "frac": 0.25144078861727687,
+   "oracle": -2.7575240928209723,
+   "minus_placebo": -2.715050814573791
+  },
+  {
+   "ctx": "cur_mid \ud558\uc70425%",
+   "frac": 0.24961440906957205,
+   "oracle": -2.7913402950867976,
+   "minus_placebo": -2.748867016839616
+  },
+  {
+   "ctx": "base_state==__3",
+   "frac": 0.026314855211098706,
+   "oracle": -2.806940728449149,
+   "minus_placebo": -2.7644674502019675
+  },
+  {
+   "ctx": "tmc_n \ud558\uc70425%",
+   "frac": 0.19422343367244296,
+   "oracle": -2.8232518677390317,
+   "minus_placebo": -2.78077858949185
+  },
+  {
+   "ctx": "game_dayofweek==2",
+   "frac": 0.17483540888417282,
+   "oracle": -2.84824432302878,
+   "minus_placebo": -2.8057710447815984
+  },
+  {
+   "ctx": "pitcher_hand==1",
+   "frac": 0.2833452330704872,
+   "oracle": -2.8500662912887265,
+   "minus_placebo": -2.807593013041545
+  },
+  {
+   "ctx": "pitcher_hand==2",
+   "frac": 0.7166547669295128,
+   "oracle": -2.8500662912887265,
+   "minus_placebo": -2.807593013041545
+  },
+  {
+   "ctx": "asof_pitcher_fastball_rate \ud558\uc70425%",
+   "frac": 0.24992209288106443,
+   "oracle": -2.871498169788083,
+   "minus_placebo": -2.8290248915409015
+  },
+  {
+   "ctx": "asof_pitcher_ball_rate \uc0c1\uc70450%",
+   "frac": 0.49984418576212886,
+   "oracle": -2.891534250833729,
+   "minus_placebo": -2.8490609725865474
+  },
+  {
+   "ctx": "cur_os \ud558\uc70425%",
+   "frac": 0.24961440906957205,
+   "oracle": -2.892279638099353,
+   "minus_placebo": -2.8498063598521717
+  },
+  {
+   "ctx": "asof_pitcher_prev1_game_success_rate \ud558\uc70425%",
+   "frac": 0.24666774487489498,
+   "oracle": -2.897732998611218,
+   "minus_placebo": -2.8552597203640366
+  },
+  {
+   "ctx": "asof_pitcher_breaking_rate \ud558\uc70425%",
+   "frac": 0.24992209288106443,
+   "oracle": -2.9139378318360514,
+   "minus_placebo": -2.87146455358887
+  },
+  {
+   "ctx": "asof_pitcher_prev5_game_success_rate \ud558\uc70425%",
+   "frac": 0.2469044247298891,
+   "oracle": -3.0145981138459774,
+   "minus_placebo": -2.972124835598796
+  },
+  {
+   "ctx": "asof_pitcher_strike_rate \ud558\uc70425%",
+   "frac": 0.24992209288106443,
+   "oracle": -3.0182337688728467,
+   "minus_placebo": -2.975760490625665
+  },
+  {
+   "ctx": "run_top_before \uc0c1\uc70450%",
+   "frac": 0.5539570899422895,
+   "oracle": -3.0189131099199358,
+   "minus_placebo": -2.9764398316727543
+  },
+  {
+   "ctx": "base_state==_23",
+   "frac": 0.02195994587920649,
+   "oracle": -3.025793940143899,
+   "minus_placebo": -2.9833206618967174
+  },
+  {
+   "ctx": "cur_succ \uc0c1\uc70425%",
+   "frac": 0.24961440906957205,
+   "oracle": -3.0632365256468574,
+   "minus_placebo": -3.020763247399676
+  },
+  {
+   "ctx": "cur_succ \uc0c1\uc70450%",
+   "frac": 0.4992288181391441,
+   "oracle": -3.0812438372776114,
+   "minus_placebo": -3.03877055903043
+  },
+  {
+   "ctx": "asof_pitcher_reverse_rate \ud558\uc70425%",
+   "frac": 0.24992603754531434,
+   "oracle": -3.098344868672143,
+   "minus_placebo": -3.0558715904249616
+  },
+  {
+   "ctx": "asof_pitcher_offspeed_rate \uc0c1\uc70425%",
+   "frac": 0.24992209288106443,
+   "oracle": -3.1046358401612224,
+   "minus_placebo": -3.062162561914041
+  },
+  {
+   "ctx": "game_type==F",
+   "frac": 0.11837937413957011,
+   "oracle": -3.168139372827227,
+   "minus_placebo": -3.1256660945800454
+  },
+  {
+   "ctx": "game_type==R",
+   "frac": 0.8816206258604299,
+   "oracle": -3.168139372827227,
+   "minus_placebo": -3.1256660945800454
+  },
+  {
+   "ctx": "asof_pitcher_strike_rate \uc0c1\uc70450%",
+   "frac": 0.49984024109787895,
+   "oracle": -3.1915709417716016,
+   "minus_placebo": -3.14909766352442
+  },
+  {
+   "ctx": "asof_pitcher_offspeed_rate \ud558\uc70425%",
+   "frac": 0.24992209288106443,
+   "oracle": -3.228374917770566,
+   "minus_placebo": -3.1859016395233843
+  },
+  {
+   "ctx": "game_dayofweek==4",
+   "frac": 0.1630053607987156,
+   "oracle": -3.288712806924309,
+   "minus_placebo": -3.2462395286771275
+  },
+  {
+   "ctx": "base_state==_2_",
+   "frac": 0.07898795694004505,
+   "oracle": -3.2972424275653793,
+   "minus_placebo": -3.254769149318198
+  },
+  {
+   "ctx": "asof_pitcher_prev1_game_middle_rate \uc0c1\uc70425%",
+   "frac": 0.24811543665460914,
+   "oracle": -3.3069263350430447,
+   "minus_placebo": -3.264453056795863
+  },
+  {
+   "ctx": "asof_pitcher_reverse_rate \uc0c1\uc70425%",
+   "frac": 0.24992209288106443,
+   "oracle": -3.3255627481935335,
+   "minus_placebo": -3.283089469946352
+  },
+  {
+   "ctx": "game_month==4",
+   "frac": 0.16799536107484211,
+   "oracle": -3.33040703325662,
+   "minus_placebo": -3.2879337550094383
+  },
+  {
+   "ctx": "asof_pitcher_middle_rate \uc0c1\uc70425%",
+   "frac": 0.24992209288106443,
+   "oracle": -3.3734254640601193,
+   "minus_placebo": -3.330952185812938
+  },
+  {
+   "ctx": "asof_pitcher_success_rate \uc0c1\uc70450%",
+   "frac": 0.49984418576212886,
+   "oracle": -3.3793210896196797,
+   "minus_placebo": -3.336847811372498
+  },
+  {
+   "ctx": "run_top_before \ud558\uc70425%",
+   "frac": 0.29492282264395064,
+   "oracle": -3.4054678209754456,
+   "minus_placebo": -3.362994542728264
+  },
+  {
+   "ctx": "cur_bb \ud558\uc70425%",
+   "frac": 0.24961440906957205,
+   "oracle": -3.415230843574818,
+   "minus_placebo": -3.3727575653276367
+  },
+  {
+   "ctx": "asof_pitcher_n \uc0c1\uc70425%",
+   "frac": 0.2500088754945623,
+   "oracle": -3.4607670988033306,
+   "minus_placebo": -3.418293820556149
+  },
+  {
+   "ctx": "asof_pitcher_pitchmix_n \uc0c1\uc70425%",
+   "frac": 0.2500088754945623,
+   "oracle": -3.4607670988033306,
+   "minus_placebo": -3.418293820556149
+  },
+  {
+   "ctx": "game_month==8",
+   "frac": 0.16536032535590733,
+   "oracle": -3.464985809529935,
+   "minus_placebo": -3.4225125312827536
+  },
+  {
+   "ctx": "cur_logn_mix \uc0c1\uc70450%",
+   "frac": 0.5005857826411105,
+   "oracle": -3.479734015685608,
+   "minus_placebo": -3.4372607374384265
+  },
+  {
+   "ctx": "cur_logn_pitch \uc0c1\uc70450%",
+   "frac": 0.5005857826411105,
+   "oracle": -3.479734015685608,
+   "minus_placebo": -3.4372607374384265
+  },
+  {
+   "ctx": "asof_pitcher_breaking_rate \uc0c1\uc70450%",
+   "frac": 0.49984418576212886,
+   "oracle": -3.546510365698964,
+   "minus_placebo": -3.5040370874517826
+  },
+  {
+   "ctx": "cur_logn_bat \ud558\uc70425%",
+   "frac": 0.25028500199205544,
+   "oracle": -3.5901405828738007,
+   "minus_placebo": -3.547667304626619
+  },
+  {
+   "ctx": "asof_pitcher_fastball_rate \uc0c1\uc70425%",
+   "frac": 0.24992209288106443,
+   "oracle": -3.6751757298513894,
+   "minus_placebo": -3.632702451604208
+  },
+  {
+   "ctx": "asof_pitcher_success_rate \uc0c1\uc70425%",
+   "frac": 0.24992209288106443,
+   "oracle": -3.6865374371093367,
+   "minus_placebo": -3.644064158862155
+  },
+  {
+   "ctx": "asof_pitcher_ball_rate \ud558\uc70425%",
+   "frac": 0.24992209288106443,
+   "oracle": -3.706052460234787,
+   "minus_placebo": -3.6635791819876053
+  },
+  {
+   "ctx": "asof_pitcher_success_rate \ud558\uc70425%",
+   "frac": 0.24992998220956422,
+   "oracle": -3.7417709228425338,
+   "minus_placebo": -3.6992976445953523
+  },
+  {
+   "ctx": "asof_pitcher_n \ud558\uc70425%",
+   "frac": 0.2500759347868106,
+   "oracle": -3.7592689735305385,
+   "minus_placebo": -3.716795695283357
+  },
+  {
+   "ctx": "asof_pitcher_pitchmix_n \ud558\uc70425%",
+   "frac": 0.2500759347868106,
+   "oracle": -3.7592689735305385,
+   "minus_placebo": -3.716795695283357
+  },
+  {
+   "ctx": "asof_pitcher_reverse_rate \uc0c1\uc70450%",
+   "frac": 0.500124256923872,
+   "oracle": -3.8270666409673595,
+   "minus_placebo": -3.784593362720178
+  },
+  {
+   "ctx": "cur_rev \uc0c1\uc70450%",
+   "frac": 0.4992288181391441,
+   "oracle": -3.993870023747718,
+   "minus_placebo": -3.9513967455005363
+  },
+  {
+   "ctx": "asof_pitcher_prev1_game_middle_rate \ud558\uc70425%",
+   "frac": 0.24713715992063334,
+   "oracle": -4.396418651741897,
+   "minus_placebo": -4.353945373494715
+  },
+  {
+   "ctx": "cur_fb \uc0c1\uc70425%",
+   "frac": 0.24961440906957205,
+   "oracle": -4.421605576121692,
+   "minus_placebo": -4.37913229787451
+  },
+  {
+   "ctx": "cur_succ \ud558\uc70425%",
+   "frac": 0.24961440906957205,
+   "oracle": -4.594078471550915,
+   "minus_placebo": -4.551605193303733
+  },
+  {
+   "ctx": "cur_ball \ud558\uc70425%",
+   "frac": 0.24961440906957205,
+   "oracle": -4.883490207264231,
+   "minus_placebo": -4.841016929017049
+  }
+ ],
+ "survivors": [
+  {
+   "ctx": "[\ub300\uc870] \uac19\uc740\uc190",
+   "oracle": 11.783141926470648,
+   "k": 20000,
+   "gains": [
+    -0.6049882237034581,
+    0.3226320758904535,
+    0.12958484232478895
+   ],
+   "inc": -0.43884419200855973
+  },
+  {
+   "ctx": "batter_hand==1",
+   "oracle": 11.769122092437897,
+   "k": 20000,
+   "gains": [
+    -0.6058249642537703,
+    0.32105975402382114,
+    0.13258508035573868
+   ],
+   "inc": -0.4342255747518493
+  },
+  {
+   "ctx": "batter_hand==2",
+   "oracle": 11.769122092437897,
+   "k": 20000,
+   "gains": [
+    -0.6058249642537703,
+    0.32105975402382114,
+    0.13258508035573868
+   ],
+   "inc": -0.4342255747518493
+  },
+  {
+   "ctx": "dx_mid_sh \ud558\uc70425%",
+   "oracle": 11.328865588092526,
+   "k": 20000,
+   "gains": [
+    -0.5775885861885399,
+    0.31334938997108,
+    0.09566734253462528
+   ],
+   "inc": -0.5046358576784087
+  },
+  {
+   "ctx": "dx_succ_sh \ud558\uc70425%",
+   "oracle": 11.678929597063984,
+   "k": 20000,
+   "gains": [
+    -0.5847344119738409,
+    0.3239735304199769,
+    0.14575212979650587
+   ],
+   "inc": -0.42676769480522125
+  },
+  {
+   "ctx": "lx_ball_sh \ud558\uc70425%",
+   "oracle": 11.85588200780694,
+   "k": 20000,
+   "gains": [
+    -0.5949596497330276,
+    0.31992315632362534,
+    0.1252350826654265
+   ],
+   "inc": -0.4660832451073702
+  },
+  {
+   "ctx": "lx_rev_sh \ud558\uc70425%",
+   "oracle": 11.400205541435412,
+   "k": 20000,
+   "gains": [
+    -0.5697011749211924,
+    0.3311853685444248,
+    0.10192078000318361
+   ],
+   "inc": -0.4941319931780299
+  },
+  {
+   "ctx": "lx_str_sh \ud558\uc70425%",
+   "oracle": 12.053054456526525,
+   "k": 20000,
+   "gains": [
+    -0.588609010213986,
+    0.3209926437811532,
+    0.13584761020308633
+   ],
+   "inc": -0.4416339442655044
+  },
+  {
+   "ctx": "tmh_breaking_dev \uc0c1\uc70450%",
+   "oracle": 8.0017151737419,
+   "k": 20000,
+   "gains": [
+    -0.36749270235168296,
+    0.19455212772197683,
+    0.10793899599957513
+   ],
+   "inc": -0.32710316267730377
+  },
+  {
+   "ctx": "tmh_fastball_dev \uc0c1\uc70450%",
+   "oracle": 7.059882134517011,
+   "k": 20000,
+   "gains": [
+    -0.2885663836163985,
+    0.2573821458759653,
+    0.17877438847870053
+   ],
+   "inc": -0.21064042469311062
+  },
+  {
+   "ctx": "tmh_offspeed_dev \uc0c1\uc70450%",
+   "oracle": 9.371101916201724,
+   "k": 20000,
+   "gains": [
+    -0.21426977309920403,
+    0.31214966124039734,
+    0.27559679671492177
+   ],
+   "inc": -0.08740700813416424
+  },
+  {
+   "ctx": "tmh_speed_dev \uc0c1\uc70450%",
+   "oracle": 7.059659919648084,
+   "k": 5000,
+   "gains": [
+    -0.01633016072673854,
+    0.5864376466034855,
+    1.0551501679179864
+   ],
+   "inc": 0.728368577269066
+  }
+ ]
+}
