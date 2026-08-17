@@ -11,11 +11,11 @@
   "C3": 1057.3394030999,
   "cand_final(실패)": 1047.3863324656
  },
- "current_experiment": "EXP014",
- "current_hypothesis": "L0-P",
- "last_completed_experiment": "EXP012",
+ "current_experiment": null,
+ "current_hypothesis": "L4-B",
+ "last_completed_experiment": "EXP015",
  "next_experiment": "EXP015",
- "experiments_completed": 12,
+ "experiments_completed": 13,
  "signals_active": [
   "D current-state",
   "residual hand differential",
@@ -34,7 +34,7 @@
  },
  "submission_candidates": [],
  "research_space_status": "LEVEL 0,1,2,3,4 모두 소진 — 재개 근거 대기",
- "updated_at": "2026-08-18T04:44:24",
+ "updated_at": "2026-08-18T04:53:18",
  "research_level": 4,
  "level_name": "ALL LEVELS SWEPT",
  "levels": {

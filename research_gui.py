@@ -1,3 +1,4 @@
+import sys
 import json
 import os
 import subprocess
@@ -6,7 +7,10 @@ import tkinter as tk
 from pathlib import Path
 from tkinter import ttk, messagebox
 
-ROOT = Path(__file__).resolve().parent
+if getattr(sys, "frozen", False):
+    ROOT = Path(sys.executable).resolve().parent
+else:
+    ROOT = Path(__file__).resolve().parent
 RESEARCH = ROOT / "research"
 STATE_FILE = RESEARCH / "state.json"
 CHECKPOINT_FILE = RESEARCH / "checkpoint.json"
