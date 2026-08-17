@@ -1042,3 +1042,26 @@ C(원천 불가)에 큰 것이 전부 있다(2025 시즌내 손 분할·궤적, 
 오늘 측정한 모든 후보(최대 +0.18%)는 그 20분의 1이다.
 
 **시간 거리는 측정 불가** — 창을 옮기면 학습량과 거리가 동시에 바뀐다. 미해결.
+
+
+---
+
+## 2026-08-18 — 후보 탐색 정책 개정. 전이 연구를 규칙으로 확정
+
+`CLAUDE.md` 에 5-b 절을 신설하고 §7 닫힌 축을 갱신했다.
+
+**바뀐 것**
+- 단일 전이 배수(`0.830 x (로컬 − 2.07%)`) **폐기**. 5절에 폐기 표시를 남기고
+  이력으로만 보존한다.
+- 목표를 `TRANSFERABLE SIGNAL > LARGE LOCAL SIGNAL` 로 재정의.
+- HARD GATE 4단: 음수 제출 금지 / 0~3.8% 승격 금지 / 3.8% 이상만 후보 /
+  새 family 는 의사미래 전이 부호 선행 확인(기각용).
+- family 전이 조회표(current-state +0.697 > regime +0.518 > context
+  +0.135~0.233 > recent-history −0.605 > shrinkage +2.006)를 상시 참조표로.
+- 새 후보는 학습 전에 8항목(FAMILY ~ EXPECTED_FUTURE_RANGE)을 채운다.
+
+**family 단위로 닫힌 것** — recent-history · shrinkage · generic regime ·
+simple calibration · trajectory · gating · F-specific · team/park identity.
+
+**현재 상태** — 이 게이트를 통과하는 후보는 0개다. 오늘 측정한 최대치가
+로컬 +0.18%(후처리 5축)이고 문턱은 +3.8% 다. Champion 1049.9226 유지.
