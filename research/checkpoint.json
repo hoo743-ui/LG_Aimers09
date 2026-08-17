@@ -1,9 +1,9 @@
 {
- "current_experiment": "EXP020",
- "hypothesis": "L0-U",
- "process_id": 16120,
- "command": "python research/exp020_conj.py",
- "start_time": "2026-08-18T05:50:14",
- "last_update": "2026-08-18T05:50:33",
+ "current_experiment": "EXP021",
+ "hypothesis": "S-1",
+ "process_id": 4072,
+ "command": "python research/exp021_wcurve.py",
+ "start_time": "2026-08-18T06:02:34",
+ "last_update": "2026-08-18T06:02:40",
  "status": "COMPLETED"
 }
