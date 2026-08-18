@@ -1,10 +1,10 @@
 {
  "champion": {
-  "artifact": "submissions/cand_bmain.zip",
-  "lb_score": 1071.3085051917,
-  "sha256": "e9c749255fb45ebfdfe835f1974efe35ebd50220139b41aa2faec309d72e7a8e",
-  "updated_at": "2026-08-19T00:28:15",
-  "note": "차등3 w=0.65 + 투수주효과 k=50000 w=1.0 + 타자주효과 k=20000 w=1.5"
+  "artifact": "submissions/cand_bw25.zip",
+  "lb_score": 1071.8145632143,
+  "sha256": "5522319c4c92cf15465475dfa5842551f546a7602b7d8e19f2191c364f1f7c6e",
+  "updated_at": "2026-08-19T00:33:31",
+  "note": "차등3 w=0.65 + 투수주효과 k=50000 w=1.0 + 타자주효과 k=20000 w=2.5"
  },
  "lb_anchors": {
   "C1 w=0": 1049.9225979712,
@@ -38,34 +38,29 @@
  },
  "submission_candidates": [
   {
-   "name": "cand_bw25.zip",
-   "sha256": "5522319c4c92cf15",
-   "change": "타자 주효과 w 1.5->2.5",
-   "expect": "모형 예측 +12.9(β_LB=3.1) 또는 +9.3(β_LB=1.9). 최선 +3.1 / 최악 -0.5"
+   "name": "cand_full2.zip",
+   "sha256": "8937e4b6503cc2ce",
+   "change": "타자 w=2.1 + 볼우위 + 쌍",
+   "expect": "타자 w 최적 +0.38, 볼우위 +1.5~1.8, 쌍 +0.4 -> 합 +2.3 내외"
   },
   {
-   "name": "cand_bw30.zip",
-   "sha256": "7142461aeecf733f",
-   "change": "타자 주효과 w=3.0"
+   "name": "cand_full.zip",
+   "sha256": "0dd185c6b403af93",
+   "change": "타자 w=2.1 + 볼우위"
+  },
+  {
+   "name": "cand_bs.zip",
+   "sha256": "f297b4b695aee96b",
+   "change": "현행 + 볼우위만 (귀속 확인용)"
   },
   {
    "name": "cand_bw20.zip",
    "sha256": "36ba479ce3ce33f9",
-   "change": "타자 주효과 w=2.0"
-  },
-  {
-   "name": "cand_bw40.zip",
-   "sha256": "40ee81bcbd72ced0",
-   "change": "타자 주효과 w=4.0"
-  },
-  {
-   "name": "cand_monocar.zip",
-   "sha256": "cfef0d35f1fbf1cb",
-   "change": "통산 비율 단조 제약"
+   "change": "타자 w=2.0 (곡선 확인용)"
   }
  ],
  "research_space_status": "READY_FOR_NEXT_HYPOTHESIS",
- "updated_at": "2026-08-19T00:30:21",
+ "updated_at": "2026-08-19T00:36:43",
  "research_level": 4,
  "level_name": "ALL LEVELS SWEPT",
  "levels": {
