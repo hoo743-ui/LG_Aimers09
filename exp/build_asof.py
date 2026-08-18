@@ -171,6 +171,13 @@ MONO_10 = {"cur_succ": 1, "cur_rev": -1, "cur_mid": -1, "cur_ball": -1, "cur_str
            "asof_pitcher_success_rate": 1, "asof_pitcher_middle_rate": -1,
            "asof_pitcher_reverse_rate": -1, "asof_pitcher_ball_rate": -1,
            "asof_pitcher_strike_rate": 1}
+# 통산 비율만 (cur_* 제외). mono10 실패 진단 — 제약이 cur_succ 로 용량을 몰아
+# 시즌 내 적합을 키웠고 그게 다음 시즌에 무너졌다. 통산 비율은 시즌을 건너
+# 안정적인 값이라 같은 함정이 없다.
+MONO_CAREER = {"asof_pitcher_success_rate": 1, "asof_pitcher_middle_rate": -1,
+               "asof_pitcher_reverse_rate": -1, "asof_pitcher_ball_rate": -1,
+               "asof_pitcher_strike_rate": 1}
+MONO_SETS = {"all10": MONO_10, "career": MONO_CAREER}
 MONO_SPEC = {}          # --mono 로 켠다
 
 
@@ -204,12 +211,14 @@ def main():
                     help="H1(수준확장) 6개를 --ctx 위에 더한다 — 25회차 후보")
     ap.add_argument("--eb", action="store_true",
                     help="EB 축소 5개를 --ctx --lvl 위에 더한다 (원시는 유지)")
-    ap.add_argument("--mono", action="store_true",
-                    help="물리로 아는 10열에 단조 제약 (EXP023b: 2024 +9.4)")
+    ap.add_argument("--mono", type=str, default=None, choices=list(MONO_SETS),
+                    help="단조 제약 집합. all10 은 LB -65.7 로 실패, career 는 미검증")
     ap.add_argument("--rx", action="store_true",
                     help="RX(로그비) 9개를 더한다 — 곱은 줬고 비는 안 줬다")
     ap.add_argument("--k2", action="store_true",
                     help="K2(2스트라이크 국면) 4개를 --ctx --lvl 위에 더한다")
+    ap.add_argument("--depth", type=int, default=None,
+                    help="트리 깊이 오버라이드 (기본 6)")
     ap.add_argument("--center", type=float, default=None,
                     help="이미 푼 클린 아핀 center 를 재사용한다")
     ap.add_argument("--skip-eval", action="store_true",
@@ -223,10 +232,13 @@ def main():
     assert not (a.eb and not a.lvl), "--eb 는 --lvl 위에 얹는다"
     assert not (a.eb and a.k2), "한 번에 하나만 바꾼다"
     assert not (a.rx and not a.lvl), "--rx 는 --lvl 위에 얹는다"
-    global MONO_SPEC
+    global MONO_SPEC, HP
+    if a.depth:
+        HP = dict(HP, depth=a.depth)
+        print(f'  depth 오버라이드 {a.depth}')
     if a.mono:
-        MONO_SPEC = MONO_10
-        print(f'  단조 제약 {len(MONO_10)}열 적용')
+        MONO_SPEC = MONO_SETS[a.mono]
+        print(f'  단조 제약 [{a.mono}] {len(MONO_SPEC)}열 적용')
     acols = (sc.ASOF_COLS + (sc.FORM_COLS if a.form else [])
              + (sc.CTX_COLS if a.ctx else [])
              + (sc.LVL_COLS if a.lvl else [])

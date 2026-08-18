@@ -13,10 +13,10 @@
   "mono10 단조제약": 994.5736824471
  },
  "current_experiment": null,
- "current_hypothesis": "M1",
- "last_completed_experiment": "EXP023b",
+ "current_hypothesis": "A-MU",
+ "last_completed_experiment": "EXP024",
  "next_experiment": null,
- "experiments_completed": 23,
+ "experiments_completed": 24,
  "signals_active": [
   "D current-state",
   "residual hand differential",
@@ -35,15 +35,16 @@
  },
  "submission_candidates": [
   {
-   "name": "cand_mono10.zip",
-   "sha256": "686386bbaa4a0ce4960db4c7cc0bcee494050dfcc385e18e3f5ee5fb0e1c64a1",
-   "change": "모델에 단조 제약 10열 + 차등 3축 w=0.65",
-   "local_2024": "968.1 (무제약 958.7, +9.4)",
-   "verified": "verify 4단계 + 단독행/배치 0.00e+00"
+   "name": "cand_monocar.zip",
+   "sha256": "cfef0d35f1fbf1cb4871de262ba09b31bb5ed58900efd59e525abc31347ea76c",
+   "change": "단조 제약을 **통산 비율 5열에만** (cur_* 제외) + 차등 3축 w=0.65",
+   "rationale": "mono10(-65.7) 진단 — 제약이 cur_succ 로 용량을 몰아 시즌내 적합을 키웠다. 통산 비율은 시즌을 건너 안정적이라 같은 함정이 없다.",
+   "prediction": "없음 — 모델 축은 로컬이 방향을 못 맞힌다는 걸 -65.7 로 배웠다",
+   "verified": "구조 청정 · 단독행/배치 0.00e+00 · verify 4단계"
   }
  ],
  "research_space_status": "READY_FOR_NEXT_HYPOTHESIS",
- "updated_at": "2026-08-18T09:55:31",
+ "updated_at": "2026-08-18T19:24:43",
  "research_level": 4,
  "level_name": "ALL LEVELS SWEPT",
  "levels": {
@@ -63,5 +64,5 @@
   "final_rank": "최고점 (private 분할 없음)",
   "budget_total": 48
  },
- "strategy": "최고점 채점 + private 없음 -> 일반화 격차가 0. LB 가 목적함수 그 자체이고 같은 제출은 같은 점수라 표본 잡음도 0. 통계 추정이 아니라 결정론적 함수의 예산 제한 최적화 문제다. 나쁜 제출의 비용이 0 이므로 모든 슬롯을 쓴다. 회전 속도가 관건이라 exp/build_w.py 로 초 단위 빌드."
+ "strategy": "최고점 채점에서는 기대값이 아니라 **상방 꼬리**를 최적화한다. 안전한 후보는 편차가 0 이라 최고점을 못 올린다. 사전적으로 중립이고 편차가 큰 후보(모델 하이퍼파라미터·구조 변형)를 계속 쏘되, 합법성 관문 4개는 매번 통과시킨다."
 }

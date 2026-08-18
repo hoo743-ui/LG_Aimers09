@@ -1,9 +1,9 @@
 {
- "current_experiment": "EXP023b",
- "hypothesis": "M1",
- "process_id": 28388,
- "command": "python research/exp023_mono.py",
- "start_time": "2026-08-18T07:00:54",
- "last_update": "2026-08-18T07:10:56",
+ "current_experiment": "EXP024",
+ "hypothesis": "A-MU",
+ "process_id": 11268,
+ "command": "python research/exp024_matchup.py",
+ "start_time": "2026-08-18T19:03:48",
+ "last_update": "2026-08-18T19:04:04",
  "status": "COMPLETED"
 }
