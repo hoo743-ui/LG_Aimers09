@@ -38,29 +38,24 @@
  },
  "submission_candidates": [
   {
-   "name": "cand_full2.zip",
-   "sha256": "8937e4b6503cc2ce",
-   "change": "타자 w=2.1 + 볼우위 + 쌍",
-   "expect": "타자 w 최적 +0.38, 볼우위 +1.5~1.8, 쌍 +0.4 -> 합 +2.3 내외"
-  },
-  {
-   "name": "cand_full.zip",
-   "sha256": "0dd185c6b403af93",
-   "change": "타자 w=2.1 + 볼우위"
-  },
-  {
-   "name": "cand_bs.zip",
-   "sha256": "f297b4b695aee96b",
-   "change": "현행 + 볼우위만 (귀속 확인용)"
-  },
-  {
    "name": "cand_bw20.zip",
    "sha256": "36ba479ce3ce33f9",
-   "change": "타자 w=2.0 (곡선 확인용)"
+   "change": "타자 주효과 w 2.5->2.0 (단일 변경)",
+   "expect": "+0.35 -> 약 1072.17. **LB 3점으로 적합한 곡선의 내삽이라 이번 세션에서 가장 신뢰도 높은 예측**"
+  },
+  {
+   "name": "cand_b3.zip",
+   "change": "타자 주효과 표를 3시즌으로 (단일 변경)",
+   "expect": "로컬 2024 +2.9 / 2023 -2.6. TYPE B 창 변경이라 위험"
+  },
+  {
+   "name": "cand_monocar.zip",
+   "sha256": "cfef0d35f1fbf1cb",
+   "change": "통산 비율 단조 제약 (모델)"
   }
  ],
  "research_space_status": "READY_FOR_NEXT_HYPOTHESIS",
- "updated_at": "2026-08-19T00:36:43",
+ "updated_at": "2026-08-19T00:46:48",
  "research_level": 4,
  "level_name": "ALL LEVELS SWEPT",
  "levels": {
