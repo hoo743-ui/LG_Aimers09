@@ -1,9 +1,9 @@
 {
- "current_experiment": "EXP027",
- "hypothesis": "A-MX",
- "process_id": 13244,
+ "current_experiment": "EXP031",
+ "hypothesis": "A-PN2",
+ "process_id": 27908,
  "command": "python research/exp026_prune.py",
- "start_time": "2026-08-18T21:19:41",
- "last_update": "2026-08-18T21:32:06",
+ "start_time": "2026-08-18T23:05:15",
+ "last_update": "2026-08-18T23:20:47",
  "status": "COMPLETED"
 }

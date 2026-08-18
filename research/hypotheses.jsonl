@@ -56,3 +56,6 @@
 {"id": "A-MU", "status": "CLOSED", "updated_at": "2026-08-18T19:04:04", "level": 0, "hypothesis": "투수x타자 매치업 후처리 축", "result": 0.66}
 {"id": "P-DUP", "status": "CLOSED", "updated_at": "2026-08-18T20:57:59", "level": 2, "hypothesis": "증명된 중복 열 가지치기", "result": -3.33}
 {"id": "A-MX", "status": "CLOSED", "updated_at": "2026-08-18T21:32:06", "level": 2, "hypothesis": "구종믹스 x 맥락 (X/H1 연장)", "result": -7.03}
+{"id": "R-MONO", "status": "CLOSED", "updated_at": "2026-08-18T22:25:16", "level": 3, "hypothesis": "단조 재형성", "result": -1.05}
+{"id": "R-BINCTX", "status": "CLOSED", "updated_at": "2026-08-18T22:59:48", "level": 3, "hypothesis": "예측 구간 x 맥락 보정", "result": -3.26}
+{"id": "A-PN2", "status": "CLOSED", "updated_at": "2026-08-18T23:20:47", "level": 2, "hypothesis": "직전경기 투구수를 곱으로 (PN 재시험)", "result": -6.55}

@@ -232,6 +232,12 @@ def main():
                     help="RX(로그비) 9개를 더한다 — 곱은 줬고 비는 안 줬다")
     ap.add_argument("--k2", action="store_true",
                     help="K2(2스트라이크 국면) 4개를 --ctx --lvl 위에 더한다")
+    ap.add_argument("--border", type=int, default=None,
+                    help="border_count 오버라이드 (기본 32)")
+    ap.add_argument("--l2", type=float, default=None,
+                    help="l2_leaf_reg 오버라이드 (기본 100)")
+    ap.add_argument("--iters", type=int, default=None)
+    ap.add_argument("--lr", type=float, default=None)
     ap.add_argument("--depth", type=int, default=None,
                     help="트리 깊이 오버라이드 (기본 6)")
     ap.add_argument("--center", type=float, default=None,
@@ -248,9 +254,15 @@ def main():
     assert not (a.eb and a.k2), "한 번에 하나만 바꾼다"
     assert not (a.rx and not a.lvl), "--rx 는 --lvl 위에 얹는다"
     global MONO_SPEC, HP
-    if a.depth:
-        HP = dict(HP, depth=a.depth)
-        print(f'  depth 오버라이드 {a.depth}')
+    ov = {}
+    if a.depth: ov["depth"] = a.depth
+    if a.border: ov["border_count"] = a.border
+    if a.l2: ov["l2_leaf_reg"] = a.l2
+    if a.iters: ov["iterations"] = a.iters
+    if a.lr: ov["learning_rate"] = a.lr
+    if ov:
+        HP = dict(HP, **ov)
+        print(f'  HP 오버라이드 {ov}')
     if a.mono:
         MONO_SPEC = MONO_SETS[a.mono]
         print(f'  단조 제약 [{a.mono}] {len(MONO_SPEC)}열 적용')

@@ -13,10 +13,10 @@
   "mono10 단조제약": 994.5736824471
  },
  "current_experiment": null,
- "current_hypothesis": "A-MX",
- "last_completed_experiment": "EXP027",
+ "current_hypothesis": "A-PN2",
+ "last_completed_experiment": "EXP031",
  "next_experiment": null,
- "experiments_completed": 26,
+ "experiments_completed": 30,
  "signals_active": [
   "D current-state",
   "residual hand differential",
@@ -35,16 +35,41 @@
  },
  "submission_candidates": [
   {
+   "name": "cand_pmain.zip",
+   "sha256": "1343aa7561f57289eb0e8decc14397f618f06851d7341978b181addd04ef7d94",
+   "change": "Champion + 투수 주효과 k=50000 w=1.0",
+   "expect": "로컬 +0.8 (3/3 양수) -> LB 기대 +0.6",
+   "type": "A · 후처리(안전 등급)"
+  },
+  {
+   "name": "cand_ens468.zip",
+   "sha256": "21092473a68c91cb",
+   "change": "구성 앙상블 depth 4/6/8 (9모델)",
+   "expect": "미지 — 편향 없이 구성 선택 오차만 줄인다",
+   "type": "모델(고편차)"
+  },
+  {
    "name": "cand_monocar.zip",
-   "sha256": "cfef0d35f1fbf1cb4871de262ba09b31bb5ed58900efd59e525abc31347ea76c",
-   "change": "단조 제약을 **통산 비율 5열에만** (cur_* 제외) + 차등 3축 w=0.65",
-   "rationale": "mono10(-65.7) 진단 — 제약이 cur_succ 로 용량을 몰아 시즌내 적합을 키웠다. 통산 비율은 시즌을 건너 안정적이라 같은 함정이 없다.",
-   "prediction": "없음 — 모델 축은 로컬이 방향을 못 맞힌다는 걸 -65.7 로 배웠다",
-   "verified": "구조 청정 · 단독행/배치 0.00e+00 · verify 4단계"
+   "sha256": "cfef0d35f1fbf1cb",
+   "change": "통산 비율에만 단조 제약",
+   "expect": "미지",
+   "type": "모델(고편차)"
+  },
+  {
+   "name": "cand_d4.zip",
+   "sha256": "312a2fb9f7a2f0fb",
+   "change": "depth=4",
+   "type": "모델(고편차)"
+  },
+  {
+   "name": "cand_d8.zip",
+   "sha256": "c95fbfb1a9f1bf33",
+   "change": "depth=8",
+   "type": "모델(고편차)"
   }
  ],
  "research_space_status": "READY_FOR_NEXT_HYPOTHESIS",
- "updated_at": "2026-08-18T21:32:06",
+ "updated_at": "2026-08-18T23:27:03",
  "research_level": 4,
  "level_name": "ALL LEVELS SWEPT",
  "levels": {
