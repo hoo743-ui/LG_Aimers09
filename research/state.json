@@ -40,22 +40,34 @@
   {
    "name": "cand_bw20.zip",
    "sha256": "36ba479ce3ce33f9",
-   "change": "타자 주효과 w 2.5->2.0 (단일 변경)",
-   "expect": "+0.35 -> 약 1072.17. **LB 3점으로 적합한 곡선의 내삽이라 이번 세션에서 가장 신뢰도 높은 예측**"
+   "change": "타자 주효과 w 2.5->2.0",
+   "expect": "+0.35 (LB 3점 곡선의 내삽)",
+   "conf": "높음"
+  },
+  {
+   "name": "cand_pw20.zip",
+   "change": "투수 주효과 w 1.0->2.0",
+   "expect": "+0.45 (타자에서 검증된 '로컬보다 크게' 패턴)",
+   "conf": "중간"
+  },
+  {
+   "name": "cand_pw30.zip",
+   "change": "투수 주효과 w 1.0->3.0",
+   "conf": "중간"
   },
   {
    "name": "cand_b3.zip",
-   "change": "타자 주효과 표를 3시즌으로 (단일 변경)",
-   "expect": "로컬 2024 +2.9 / 2023 -2.6. TYPE B 창 변경이라 위험"
+   "change": "타자 표 3시즌",
+   "conf": "낮음 (TYPE B 창 변경)"
   },
   {
    "name": "cand_monocar.zip",
-   "sha256": "cfef0d35f1fbf1cb",
-   "change": "통산 비율 단조 제약 (모델)"
+   "change": "통산 비율 단조 제약 (모델)",
+   "conf": "미지"
   }
  ],
  "research_space_status": "READY_FOR_NEXT_HYPOTHESIS",
- "updated_at": "2026-08-19T00:46:48",
+ "updated_at": "2026-08-19T00:57:52",
  "research_level": 4,
  "level_name": "ALL LEVELS SWEPT",
  "levels": {
