@@ -178,6 +178,13 @@ MONO_CAREER = {"asof_pitcher_success_rate": 1, "asof_pitcher_middle_rate": -1,
                "asof_pitcher_reverse_rate": -1, "asof_pitcher_ball_rate": -1,
                "asof_pitcher_strike_rate": 1}
 MONO_SETS = {"all10": MONO_10, "career": MONO_CAREER}
+
+# 정보 손실이 **증명된** 중복 열 (RELATION_LEDGER §3). 다른 열의 정확한 함수라
+# 빼도 정보가 0 만큼 준다. 2026-08-18 에 "쓸모없는 8열 추가 = -13.5" 를 재고
+# 나서 나온 발상 — 열에 세금이 있다면 **중복을 빼면 이득**이다.
+PRUNE_DUP = ["asof_pitcher_pitchmix_n", "run_total_before", "score_diff_home",
+             "num_runners_on", "base_state", "away_win_expectancy",
+             "cur_logn_mix"]
 MONO_SPEC = {}          # --mono 로 켠다
 
 
@@ -213,6 +220,14 @@ def main():
                     help="EB 축소 5개를 --ctx --lvl 위에 더한다 (원시는 유지)")
     ap.add_argument("--mono", type=str, default=None, choices=list(MONO_SETS),
                     help="단조 제약 집합. all10 은 LB -65.7 로 실패, career 는 미검증")
+    ap.add_argument("--mx", action="store_true",
+                    help="MX(구종믹스 x 맥락) 6열 — X/H1 의 직접 연장")
+    ap.add_argument("--prune", action="store_true",
+                    help="증명된 중복 7열 제거 — 정보 손실 0")
+    ap.add_argument("--nz", action="store_true",
+                    help="위약 — 정보 0 인 잡음 8열. 열 추가 자체의 비용 측정")
+    ap.add_argument("--uc", action="store_true",
+                    help="UC(관측되지 않은 결과 계급) 8열 — current-state family")
     ap.add_argument("--rx", action="store_true",
                     help="RX(로그비) 9개를 더한다 — 곱은 줬고 비는 안 줬다")
     ap.add_argument("--k2", action="store_true",
@@ -244,7 +259,11 @@ def main():
              + (sc.LVL_COLS if a.lvl else [])
              + (sc.K2_COLS if a.k2 else [])
              + (sc.EB_COLS if a.eb else [])
-             + (sc.RX_COLS if a.rx else []))
+             + (sc.RX_COLS if a.rx else [])
+             + (sc.UC_COLS if a.uc else [])
+             + (sc.NZ_COLS if a.nz else [])
+             + (sc.MX_COLS if a.mx else []))
+    a.prune_cols = PRUNE_DUP if a.prune else []
     a.acols = acols
     out_pkl, out_zip = (OUT_PKL, OUT_ZIP)
     if a.form:
@@ -303,6 +322,8 @@ def main():
                                        for r in sc.EB_RATES), flush=True)
     features = list(allf) + ctxf + acols
     y = tr[ft.TARGET].to_numpy(np.float64)
+    if a.prune:
+        print(f"  중복 제거 비교 — 대조=가지치기 / 신규=원본", flush=True)
     print(f"피처 {len(features)}개 (기본 {len(allf)} + ctx {len(ctxf)} + "
           f"AS-OF {len(acols)})   {len(tr):,}행   {time.time()-t0:.0f}s")
     print(f"  cur_n>0 비율 {float((tr['cur_logn_pitch'] > 0).mean()):.1%}")
@@ -328,7 +349,10 @@ def main():
     post = np.column_stack([
         look(*nested_dev(p[m_tr], c[m_tr], y[m_tr], k), c[m_va])
         for (p, c), k in zip(AX, KSH)]) @ WPOST
-    drop = (sc.RX_COLS if a.rx else
+    drop = (PRUNE_DUP if a.prune else
+            sc.NZ_COLS if a.nz else
+            sc.UC_COLS if a.uc else
+            sc.RX_COLS if a.rx else
             sc.FORM_COLS if a.form else
             sc.EB_COLS if a.eb else
             sc.K2_COLS if a.k2 else

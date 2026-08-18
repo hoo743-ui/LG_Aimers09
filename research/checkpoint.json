@@ -1,9 +1,9 @@
 {
- "current_experiment": "EXP024",
- "hypothesis": "A-MU",
- "process_id": 11268,
- "command": "python research/exp024_matchup.py",
- "start_time": "2026-08-18T19:03:48",
- "last_update": "2026-08-18T19:04:04",
- "status": "COMPLETED"
+ "current_experiment": "EXP027",
+ "hypothesis": "A-MX",
+ "process_id": 16812,
+ "command": "python research/exp026_prune.py",
+ "start_time": "2026-08-18T21:08:55",
+ "last_update": "2026-08-18T21:08:58",
+ "status": "RUNNING"
 }

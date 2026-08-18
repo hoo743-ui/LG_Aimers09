@@ -54,3 +54,4 @@
 {"id": "M1", "status": "PROMISING", "updated_at": "2026-08-18T07:36:55", "level": 2, "result": 9.4}
 {"id": "M1", "status": "CLOSED", "updated_at": "2026-08-18T09:55:31", "level": 2, "result": -65.73}
 {"id": "A-MU", "status": "CLOSED", "updated_at": "2026-08-18T19:04:04", "level": 0, "hypothesis": "투수x타자 매치업 후처리 축", "result": 0.66}
+{"id": "P-DUP", "status": "CLOSED", "updated_at": "2026-08-18T20:57:59", "level": 2, "hypothesis": "증명된 중복 열 가지치기", "result": -3.33}

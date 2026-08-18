@@ -196,6 +196,47 @@ RX_PAIR = [("cmd", "succ", "rev"),      # 제구 방향 축
 RX_COLS = ([f"rx_{tag}" for tag, _, _ in RX_PAIR]
            + [f"rx_{tag}_{m}" for tag, _, _ in RX_PAIR for m in ("sh", "bs")])
 
+# 관측되지 않은 결과 계급 (UC). 2026-08-18 자료 생성 감사에서 나왔다.
+#
+#     success + reverse + middle = 0.893 (sd 0.028)   -> 이름 없는 위치 계급 ~10.7%
+#     ball    + strike           = 0.813 (sd 0.020)   -> 이름 없는 접촉 계급 ~18.7%
+#     fastball + breaking + offspeed = 1.000          -> 구종은 완전한 분할
+#
+# 앞의 둘은 **관측되지 않은 계급의 비율을 우리가 계산할 수 있다**는 뜻이다.
+# 정보는 이미 모델 안에 있지만(기존 5열의 선형결합, R^2 = 1.000000) 축평행
+# 트리는 `1 - a - b` 를 만들 수 없다 — X/H1(곱)이 통한 것과 같은 구조다.
+#
+# D 틀이 이것을 **시즌 내 값**으로 복원해 주므로 current-state family 에 속한다.
+# 실측 전이율이 가장 좋은 계열이다 (+0.697).
+UC_SPEC = [("other", ("succ", "rev", "mid")),      # 위치 4번째 계급
+           ("cont", ("ball", "str"))]              # 접촉 계급
+UC_CLIP = (-0.5, 1.5)                              # D 복원 잡음의 꼬리를 자른다
+UC_COLS = ([f"uc_{t}" for t, _ in UC_SPEC] + [f"uc_{t}_car" for t, _ in UC_SPEC]
+           + [f"uc_{t}_{m}" for t, _ in UC_SPEC for m in ("sh", "bs")])
+UC_CAREER = {"other": ("asof_pitcher_success_rate", "asof_pitcher_reverse_rate",
+                       "asof_pitcher_middle_rate"),
+             "cont": ("asof_pitcher_ball_rate", "asof_pitcher_strike_rate")}
+
+# 위약 열 (NZ). **정보가 0 인 결정론적 잡음** 8열.
+# RX(-14.6)와 UC(-13.5)가 거의 같은 값을 낸 것이 수상해서 만든 통제군이다.
+# 열을 추가하는 것 자체의 비용을 재기 위한 것이지 후보가 아니다.
+# 행 자신의 값만으로 만들어지므로 행 독립이다 (규정 4 안전).
+NZ_COLS = [f"nz_{j}" for j in range(8)]
+
+# 구종 믹스 x 맥락 (MX). **실제로 통한 패턴의 직접 연장**이다.
+#
+#     X   cur_{succ,mid}       x {adv, onb, sh, bs}   -> LB +3.90
+#     H1  cur_{ball,rev,str}   x {sh, bs}             -> LB +5.16
+#     MX  cur_{fb,bb,os}       x {sh, bs}             -> 미검증
+#
+# `cur_fb/bb/os` 는 시즌 내 구종 비율이고 모델에 **원시값으로만** 들어가 있다.
+# 맥락과의 곱은 한 번도 준 적이 없다. "이 투수는 같은손 상대로 변화구를 더
+# 던진다" 같은 조건부 성향은 축평행 트리가 만들기 어렵다.
+# current-state family 라 전이율이 가장 좋은 계열(+0.697)에 속한다.
+MX_RATES = ("fb", "bb", "os")
+MX_MUL = ("sh", "bs")
+MX_COLS = [f"mx_{r}_{m}" for r in MX_RATES for m in MX_MUL]
+
 # 2스트라이크 국면 (K2). 2026-08-16 진단에서 나왔다 — 폴드 2024 를 상황별로
 # 쪼개니 `rho^2` 가 **볼카운트에서만** 5.7배 흔들렸다 (아웃 0.90~1.12,
 # 주자수 0.91~1.47, 이닝 0.78~1.25, 손 0.89~0.92 는 전부 평평).
@@ -302,9 +343,40 @@ def attach_asof_state(df, bundle):
     for r in LVL_RATES:
         for t in LVL_MUL:
             df[f"lx_{r}_{t}"] = df[f"cur_{r}"] * mul[t]
+    # 학습 경로는 bundle 에 "features" 가 없다 (asof_prior 만 넘어온다).
+    # 그래서 features 가 없으면 **계산한다** — 이 가드를 잘못 써서 UC/NZ 실험
+    # 두 건이 무효가 됐다 (열이 한 번도 만들어지지 않았다).
+    _feats = bundle.get("features")
+    def _want(cols):
+        return _feats is None or any(c in _feats for c in cols)
+
+    if _want(MX_COLS):
+        for r in MX_RATES:
+            for m in MX_MUL:
+                df[f"mx_{r}_{m}"] = df[f"cur_{r}"] * mul[m]
+    if _want(NZ_COLS):
+        seed = (df["asof_pitcher_n"].astype("float64") * 0.7392
+                + df["balls_before"].astype("float64") * 0.3711
+                + df["strikes_before"].astype("float64") * 0.1137
+                + df["outs_before"].astype("float64") * 0.0531)
+        for j in range(8):
+            df[f"nz_{j}"] = np.sin(seed * (13.0 + 7.0 * j) + 2.3 * j)
+    if _want(UC_COLS):
+        for tag, parts in UC_SPEC:
+            v = 1.0
+            for q in parts:
+                v = v - df[f"cur_{q}"].astype("float64")
+            v = v.clip(*UC_CLIP)
+            df[f"uc_{tag}"] = v
+            for m in ("sh", "bs"):
+                df[f"uc_{tag}_{m}"] = v * mul[m]
+            c = 1.0
+            for q in UC_CAREER[tag]:
+                c = c - df[q].astype("float64")
+            df[f"uc_{tag}_car"] = c.clip(*UC_CLIP)
     # RX(로그비)는 **번들이 요구할 때만** 만든다. 2026-08-18 폴드 실측에서 −14.6
     # 으로 기각됐고, 추론 경로에 불필요한 연산을 남기지 않는 편이 안전하다.
-    if any(c in (bundle.get("features") or []) for c in RX_COLS):
+    if _want(RX_COLS):
         for tag, hi, lo in RX_PAIR:
             a = df[f"cur_{hi}"].astype("float64").clip(lower=0.0) + RX_EPS
             b = df[f"cur_{lo}"].astype("float64").clip(lower=0.0) + RX_EPS
