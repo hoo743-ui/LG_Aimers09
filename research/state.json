@@ -38,36 +38,40 @@
  },
  "submission_candidates": [
   {
+   "name": "cand_j2020.zip",
+   "change": "주효과 결합 가중 wp=2.0 wb=2.0",
+   "expect": "로컬 +2.5/+3.0/+1.0 (3/3)",
+   "conf": "중상"
+  },
+  {
    "name": "cand_bw20.zip",
-   "sha256": "36ba479ce3ce33f9",
-   "change": "타자 주효과 w 2.5->2.0",
-   "expect": "+0.35 (LB 3점 곡선의 내삽)",
+   "change": "wb 2.5->2.0 (wp 유지)",
+   "expect": "+0.35 (LB 곡선 내삽)",
    "conf": "높음"
   },
   {
-   "name": "cand_pw20.zip",
-   "change": "투수 주효과 w 1.0->2.0",
-   "expect": "+0.45 (타자에서 검증된 '로컬보다 크게' 패턴)",
+   "name": "cand_j3020.zip",
+   "change": "wp=3.0 wb=2.0",
    "conf": "중간"
   },
   {
-   "name": "cand_pw30.zip",
-   "change": "투수 주효과 w 1.0->3.0",
+   "name": "cand_j1520.zip",
+   "change": "wp=1.5 wb=2.0",
    "conf": "중간"
   },
   {
    "name": "cand_b3.zip",
    "change": "타자 표 3시즌",
-   "conf": "낮음 (TYPE B 창 변경)"
+   "conf": "낮음"
   },
   {
    "name": "cand_monocar.zip",
-   "change": "통산 비율 단조 제약 (모델)",
+   "change": "통산 비율 단조 제약",
    "conf": "미지"
   }
  ],
  "research_space_status": "READY_FOR_NEXT_HYPOTHESIS",
- "updated_at": "2026-08-19T00:57:52",
+ "updated_at": "2026-08-19T01:05:59",
  "research_level": 4,
  "level_name": "ALL LEVELS SWEPT",
  "levels": {
