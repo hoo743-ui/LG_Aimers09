@@ -1,9 +1,9 @@
 {
- "current_experiment": "EXP036",
- "hypothesis": "J-9",
- "process_id": 28596,
- "command": "python research/exp036_joint.py",
- "start_time": "2026-08-19T01:09:24",
- "last_update": "2026-08-19T01:09:34",
+ "current_experiment": "EXP037",
+ "hypothesis": "L-EST",
+ "process_id": 29000,
+ "command": "python research/exp037_level.py",
+ "start_time": "2026-08-19T02:15:24",
+ "last_update": "2026-08-19T02:15:39",
  "status": "COMPLETED"
 }

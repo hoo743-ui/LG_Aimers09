@@ -16,10 +16,10 @@
   "mono10 단조제약": 994.5736824471
  },
  "current_experiment": null,
- "current_hypothesis": "J-9",
- "last_completed_experiment": "EXP036",
+ "current_hypothesis": "L-EST",
+ "last_completed_experiment": "EXP037",
  "next_experiment": null,
- "experiments_completed": 31,
+ "experiments_completed": 32,
  "signals_active": [
   "D current-state",
   "residual hand differential",
@@ -39,47 +39,47 @@
  "submission_candidates": [
   {
    "rank": 1,
-   "name": "cand_jopt.zip",
-   "sha256": "6b1b1bc6ace378f7",
-   "change": "후처리 9가중 결합 최적 (L_bat 은 LB 최적 2.0 고정)",
-   "local": "2022 +3.6 / 2023 +2.9 / 2024 +1.6  ★3/3",
-   "conf": "중상"
+   "name": "cand_decay.zip",
+   "sha256": "1a4ffc9a05a5c078",
+   "change": "타자 표를 지수감쇠 γ=0.5 + wp=2.0 wb=1.75",
+   "local": "2022 +2.6 / 2023 +1.8 / 2024 +2.3  ★3/3",
+   "conf": "중상 · 넓은 고원"
   },
   {
    "rank": 2,
-   "name": "cand_j2020.zip",
-   "sha256": "e7b71781407da8c7",
-   "change": "수준 2축만 결합 (wp=2.0, wb=2.0)",
-   "local": "+2.5 / +3.0 / +1.0  ★3/3",
-   "conf": "중상 · 변경 최소"
+   "name": "cand_decay2.zip",
+   "sha256": "dd985ea8d1ed8dea",
+   "change": "같은 구성, wb=2.0",
+   "local": "+1.7 / +1.6 / +2.3  ★",
+   "conf": "중상"
   },
   {
    "rank": 3,
-   "name": "cand_jopt_h.zip",
-   "sha256": "749d06d2419d22ef",
-   "change": "9가중 결합 최적의 **절반 이동** (과적합 헤지)",
-   "local": "+2.1 / +1.5 / +1.2  ★3/3",
+   "name": "cand_jopt.zip",
+   "sha256": "6b1b1bc6ace378f7",
+   "change": "후처리 9가중 결합 최적 (감쇠 없음)",
+   "local": "+3.6 / +2.9 / +1.6  ★",
    "conf": "중간"
   },
   {
    "rank": 4,
-   "name": "cand_bw20.zip",
-   "sha256": "36ba479ce3ce33f9",
-   "change": "타자 가중만 2.5->2.0 (단일 변경)",
-   "local": "LB 3점 곡선 내삽 +0.35",
-   "conf": "**가장 높음**"
+   "name": "cand_j2020.zip",
+   "sha256": "e7b71781407da8c7",
+   "change": "수준 2축만 (wp=2.0, wb=2.0)",
+   "local": "+2.5 / +3.0 / +1.0  ★",
+   "conf": "중상 · 변경 최소"
   },
   {
    "rank": 5,
-   "name": "cand_monocar.zip",
-   "sha256": "cfef0d35f1fbf1cb",
-   "change": "모델에 통산 비율 단조 제약 (직교 방향)",
-   "local": "미측정",
-   "conf": "로터리 — 하방 0"
+   "name": "cand_bw20.zip",
+   "sha256": "36ba479ce3ce33f9",
+   "change": "타자 가중만 2.5->2.0",
+   "local": "LB 곡선 내삽 +0.35",
+   "conf": "가장 높음"
   }
  ],
  "research_space_status": "READY_FOR_NEXT_HYPOTHESIS",
- "updated_at": "2026-08-19T01:14:12",
+ "updated_at": "2026-08-19T02:19:18",
  "research_level": 4,
  "level_name": "ALL LEVELS SWEPT",
  "levels": {
