@@ -1,9 +1,9 @@
 {
- "current_experiment": "EXP037",
- "hypothesis": "L-EST",
- "process_id": 29000,
- "command": "python research/exp037_level.py",
- "start_time": "2026-08-19T02:15:24",
- "last_update": "2026-08-19T02:15:39",
+ "current_experiment": "EXP038",
+ "hypothesis": "D-ALL",
+ "process_id": 16628,
+ "command": "python research/exp038_decay_all.py",
+ "start_time": "2026-08-19T02:22:32",
+ "last_update": "2026-08-19T02:23:27",
  "status": "COMPLETED"
 }
