@@ -3,14 +3,14 @@
   "artifact": "submissions/cand_wd060.zip",
   "lb_score": 1060.3076531721,
   "sha256": "bd798b9a6e46275afa1f101d230aef16825464adf34ea620837fb8bb9213470e",
-  "updated_at": "2026-08-18T06:21:22",
-  "note": "차등 3축 x0.60. 모델은 cand_submit_3 과 동일"
+  "updated_at": "2026-08-18T09:55:31"
  },
  "lb_anchors": {
   "C1 w=0": 1049.9225979712,
   "C3 w=1.0": 1057.3394030999,
   "wd060 w=0.6": 1060.3076531721,
-  "cand_final(실패)": 1047.3863324656
+  "cand_final 표원천5시즌": 1047.3863324656,
+  "mono10 단조제약": 994.5736824471
  },
  "current_experiment": null,
  "current_hypothesis": "M1",
@@ -43,7 +43,7 @@
   }
  ],
  "research_space_status": "READY_FOR_NEXT_HYPOTHESIS",
- "updated_at": "2026-08-18T07:36:55",
+ "updated_at": "2026-08-18T09:55:31",
  "research_level": 4,
  "level_name": "ALL LEVELS SWEPT",
  "levels": {

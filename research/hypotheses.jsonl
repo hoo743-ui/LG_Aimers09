@@ -52,3 +52,4 @@
 {"id": "M1", "status": "PROMISING", "updated_at": "2026-08-18T06:57:59", "level": 2, "hypothesis": "단조 제약", "result": 6.64}
 {"id": "M1", "status": "PROMISING", "updated_at": "2026-08-18T07:10:56", "level": 2, "hypothesis": "단조 제약", "result": 2.83}
 {"id": "M1", "status": "PROMISING", "updated_at": "2026-08-18T07:36:55", "level": 2, "result": 9.4}
+{"id": "M1", "status": "CLOSED", "updated_at": "2026-08-18T09:55:31", "level": 2, "result": -65.73}
