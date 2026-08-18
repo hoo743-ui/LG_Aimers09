@@ -1,8 +1,8 @@
 {
- "status": "RUNNING",
+ "status": "COMPLETED",
  "experiment_id": "EXP027",
- "started_at": "2026-08-18T21:08:55",
- "last_heartbeat": "2026-08-18T21:08:58",
- "current_step": "FULL (현행) seed 42",
- "pid": 16812
+ "started_at": "2026-08-18T21:19:41",
+ "last_heartbeat": "2026-08-18T21:32:06",
+ "current_step": "done",
+ "pid": 13244
 }

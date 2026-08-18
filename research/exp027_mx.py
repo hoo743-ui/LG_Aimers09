@@ -72,7 +72,14 @@ def main():
     allf = [c for c in tc if c != ft.ID]
     ctxf = [c for c in ft.COUNT_FEATS + ft.HAND_FEATS if c not in ("tmc_n", "tmh_n")]
     FULL = list(allf) + ctxf + sc.ASOF_COLS + sc.CTX_COLS + sc.LVL_COLS
-    LEAN = FULL + sc.MX_COLS
+    # build_df 는 **캐시된** 생산 프레임이라 MX 열이 없다. 재료는 전부 있으므로
+    # 여기서 직접 만든다 (script.py 의 정의와 동일).
+    _mul = {"sh": (g("pitcher_hand") == g("batter_hand")).astype(float),
+            "bs": g("balls_before") - g("strikes_before")}
+    for r_ in sc.MX_RATES:
+        for m_ in sc.MX_MUL:
+            tr[f"mx_{r_}_{m_}"] = tr[f"cur_{r_}"].astype(float) * _mul[m_]
+    LEAN = FULL + list(sc.MX_COLS)
     print(f"FULL {len(FULL)}열   +MX {len(LEAN)}열")
     print(f"  {[c for c in FULL if c not in LEAN]}\n")
 
