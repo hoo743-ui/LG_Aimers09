@@ -1,10 +1,10 @@
 {
  "champion": {
-  "artifact": "submissions/cand_pmain.zip",
-  "lb_score": 1061.497905986,
-  "sha256": "1343aa7561f57289eb0e8decc14397f618f06851d7341978b181addd04ef7d94",
-  "updated_at": "2026-08-19T00:20:27",
-  "note": "차등3축 w=0.65 + 투수 주효과 k=50000 w=1.0"
+  "artifact": "submissions/cand_bmain.zip",
+  "lb_score": 1071.3085051917,
+  "sha256": "e9c749255fb45ebfdfe835f1974efe35ebd50220139b41aa2faec309d72e7a8e",
+  "updated_at": "2026-08-19T00:28:15",
+  "note": "차등3 w=0.65 + 투수주효과 k=50000 w=1.0 + 타자주효과 k=20000 w=1.5"
  },
  "lb_anchors": {
   "C1 w=0": 1049.9225979712,
@@ -38,41 +38,34 @@
  },
  "submission_candidates": [
   {
-   "name": "cand_pmain.zip",
-   "sha256": "1343aa7561f57289eb0e8decc14397f618f06851d7341978b181addd04ef7d94",
-   "change": "Champion + 투수 주효과 k=50000 w=1.0",
-   "expect": "로컬 +0.8 (3/3 양수) -> LB 기대 +0.6",
-   "type": "A · 후처리(안전 등급)"
+   "name": "cand_bw25.zip",
+   "sha256": "5522319c4c92cf15",
+   "change": "타자 주효과 w 1.5->2.5",
+   "expect": "모형 예측 +12.9(β_LB=3.1) 또는 +9.3(β_LB=1.9). 최선 +3.1 / 최악 -0.5"
   },
   {
-   "name": "cand_ens468.zip",
-   "sha256": "21092473a68c91cb",
-   "change": "구성 앙상블 depth 4/6/8 (9모델)",
-   "expect": "미지 — 편향 없이 구성 선택 오차만 줄인다",
-   "type": "모델(고편차)"
+   "name": "cand_bw30.zip",
+   "sha256": "7142461aeecf733f",
+   "change": "타자 주효과 w=3.0"
+  },
+  {
+   "name": "cand_bw20.zip",
+   "sha256": "36ba479ce3ce33f9",
+   "change": "타자 주효과 w=2.0"
+  },
+  {
+   "name": "cand_bw40.zip",
+   "sha256": "40ee81bcbd72ced0",
+   "change": "타자 주효과 w=4.0"
   },
   {
    "name": "cand_monocar.zip",
    "sha256": "cfef0d35f1fbf1cb",
-   "change": "통산 비율에만 단조 제약",
-   "expect": "미지",
-   "type": "모델(고편차)"
-  },
-  {
-   "name": "cand_d4.zip",
-   "sha256": "312a2fb9f7a2f0fb",
-   "change": "depth=4",
-   "type": "모델(고편차)"
-  },
-  {
-   "name": "cand_d8.zip",
-   "sha256": "c95fbfb1a9f1bf33",
-   "change": "depth=8",
-   "type": "모델(고편차)"
+   "change": "통산 비율 단조 제약"
   }
  ],
  "research_space_status": "READY_FOR_NEXT_HYPOTHESIS",
- "updated_at": "2026-08-19T00:22:19",
+ "updated_at": "2026-08-19T00:30:21",
  "research_level": 4,
  "level_name": "ALL LEVELS SWEPT",
  "levels": {
