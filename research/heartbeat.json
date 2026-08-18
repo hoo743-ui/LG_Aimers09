@@ -1,8 +1,8 @@
 {
  "status": "COMPLETED",
- "experiment_id": "EXP038",
- "started_at": "2026-08-19T02:22:32",
- "last_heartbeat": "2026-08-19T02:23:27",
+ "experiment_id": "EXP040",
+ "started_at": "2026-08-19T04:47:13",
+ "last_heartbeat": "2026-08-19T04:53:55",
  "current_step": "done",
- "pid": 16628
+ "pid": 5540
 }
