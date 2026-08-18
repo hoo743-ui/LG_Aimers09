@@ -302,12 +302,16 @@ def attach_asof_state(df, bundle):
     for r in LVL_RATES:
         for t in LVL_MUL:
             df[f"lx_{r}_{t}"] = df[f"cur_{r}"] * mul[t]
-    for tag, hi, lo in RX_PAIR:
-        v = (np.log(df[f"cur_{hi}"].astype("float64") + RX_EPS)
-             - np.log(df[f"cur_{lo}"].astype("float64") + RX_EPS))
-        df[f"rx_{tag}"] = v
-        for m in ("sh", "bs"):
-            df[f"rx_{tag}_{m}"] = v * mul[m]
+    # RX(로그비)는 **번들이 요구할 때만** 만든다. 2026-08-18 폴드 실측에서 −14.6
+    # 으로 기각됐고, 추론 경로에 불필요한 연산을 남기지 않는 편이 안전하다.
+    if any(c in (bundle.get("features") or []) for c in RX_COLS):
+        for tag, hi, lo in RX_PAIR:
+            a = df[f"cur_{hi}"].astype("float64").clip(lower=0.0) + RX_EPS
+            b = df[f"cur_{lo}"].astype("float64").clip(lower=0.0) + RX_EPS
+            v = np.log(a) - np.log(b)
+            df[f"rx_{tag}"] = v
+            for m in ("sh", "bs"):
+                df[f"rx_{tag}_{m}"] = v * mul[m]
     st = df["strikes_before"].astype("float64")
     bl = df["balls_before"].astype("float64")
     k2m = {"2s": (st == 2).astype("float64"),
