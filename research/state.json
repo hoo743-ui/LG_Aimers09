@@ -1,15 +1,18 @@
 {
  "champion": {
-  "artifact": "submissions/cand_wd060.zip",
-  "lb_score": 1060.3076531721,
-  "sha256": "bd798b9a6e46275afa1f101d230aef16825464adf34ea620837fb8bb9213470e",
-  "updated_at": "2026-08-18T09:55:31"
+  "artifact": "submissions/cand_pmain.zip",
+  "lb_score": 1061.497905986,
+  "sha256": "1343aa7561f57289eb0e8decc14397f618f06851d7341978b181addd04ef7d94",
+  "updated_at": "2026-08-19T00:20:27",
+  "note": "차등3축 w=0.65 + 투수 주효과 k=50000 w=1.0"
  },
  "lb_anchors": {
   "C1 w=0": 1049.9225979712,
   "C3 w=1.0": 1057.3394030999,
   "wd060 w=0.6": 1060.3076531721,
-  "cand_final 표원천5시즌": 1047.3863324656,
+  "pmain 투수주효과": 1061.497905986,
+  "ens468 구성앙상블": 1057.5627187714,
+  "cand_final 표원천5": 1047.3863324656,
   "mono10 단조제약": 994.5736824471
  },
  "current_experiment": null,
@@ -69,7 +72,7 @@
   }
  ],
  "research_space_status": "READY_FOR_NEXT_HYPOTHESIS",
- "updated_at": "2026-08-18T23:27:03",
+ "updated_at": "2026-08-19T00:22:19",
  "research_level": 4,
  "level_name": "ALL LEVELS SWEPT",
  "levels": {
