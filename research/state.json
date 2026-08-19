@@ -1,10 +1,10 @@
 {
  "champion": {
-  "artifact": "submissions/cand_dv060.zip",
-  "lb_score": 1074.8797684337,
-  "sha256": "124d5741a493e928",
-  "updated_at": "2026-08-20T07:13:20",
-  "note": "bw25 + 편차 4축 x0.60"
+  "artifact": "submissions/cand_h1.zip",
+  "lb_score": 1075.4602240995,
+  "sha256": "4e89063b3b4a58cd",
+  "updated_at": "2026-08-20T07:19:33",
+  "note": "w=[0.0957, 0.3946, 0.1339, 0.2153, 0.65, 0.65, 0.65, 2.0, 2.10]"
  },
  "lb_anchors": {
   "C1 w=0": 1049.9225979712,
@@ -19,7 +19,8 @@
   "full2 볼우위": 1064.7474,
   "dcfull 감쇠표": 1066.8796553114,
   "dv080 편차x0.80 (Champion)": 1073.8236813606,
-  "dv060 편차x0.60 (Champion)": 1074.8797684337
+  "dv060 편차x0.60 (Champion)": 1074.8797684337,
+  "h1 (Champion)": 1075.4602240995
  },
  "current_experiment": null,
  "current_hypothesis": "FULL",
@@ -74,7 +75,7 @@
   }
  ],
  "research_space_status": "CLOSED_EXCEPT_WEIGHT_CURVES",
- "updated_at": "2026-08-20T08:10:00",
+ "updated_at": "2026-08-20T08:30:00",
  "research_level": 4,
  "level_name": "ALL LEVELS SWEPT",
  "levels": {
@@ -134,10 +135,8 @@
    {
     "slot": 3,
     "zip": "cand_h1.zip",
-    "sha": "4e89063b3b4a58cd",
-    "predicted": 1075.88,
-    "change": "편차 m*=0.4784 + wp 2.0 + wb 2.10",
-    "role": "수확 — 세 곡선의 최적을 한 번에"
+    "result": 1075.4602240995,
+    "status": "DONE +0.58 (예상 +1.00). 투수 b 를 실측으로 교체"
    },
    {
     "slot": 4,
@@ -174,5 +173,30 @@
   "dev4": 2.73,
   "pitcher_level": 1.64,
   "note": "남은 헤드룸은 대비 3축의 축별 세분. 세 축 모두 전역 0.65 로만 쟀다"
- }
+ },
+ "curves": {
+  "contrast_global": {
+   "A": 24.729,
+   "b": 0.65,
+   "status": "SOLVED 3점",
+   "note": "축별 미측정"
+  },
+  "dev_global": {
+   "A": 11.9129,
+   "b": 0.4784,
+   "status": "SOLVED 3점"
+  },
+  "batter_level": {
+   "A": 2.414,
+   "b": 2.105,
+   "status": "SOLVED 3점 (옛 기준선)"
+  },
+  "pitcher_level": {
+   "A": 0.5813,
+   "b": 1.5236,
+   "status": "2점 재적합. 차용값 2.105 는 틀렸다",
+   "action": "wp 2.0 -> 1.524 로 되돌리면 +0.132"
+  }
+ },
+ "method_lesson": "곡선은 다른 블록을 고정한 채 잰 값이다. 3점으로 직접 푼 곡선은 맞고, 다른 축에서 b 를 빌린 외삽은 틀린다(오차 16배). b 는 축마다 다르므로 빌리지 않는다."
 }
