@@ -13,11 +13,15 @@
   "pmain 투수주효과": 1061.497905986,
   "ens468 구성앙상블": 1057.5627187714,
   "cand_final 표원천5": 1047.3863324656,
-  "mono10 단조제약": 994.5736824471
+  "mono10 단조제약": 994.5736824471,
+  "bmain 타자주효과 w1.5": 1071.3085,
+  "bw25 타자 w2.5 (Champion)": 1071.8145632143,
+  "full2 볼우위": 1064.7474,
+  "dcfull 감쇠표": 1066.8796553114
  },
  "current_experiment": null,
  "current_hypothesis": "FULL",
- "last_completed_experiment": "EXP040",
+ "last_completed_experiment": "EXP041",
  "next_experiment": null,
  "experiments_completed": 34,
  "signals_active": [
@@ -27,59 +31,48 @@
   "runner differential"
  ],
  "production_rules_frozen": {
-  "table_source": "직전 2시즌 OOF 잔차",
+  "table_source": "직전 2시즌 OOF 잔차 (하드 창)",
   "k": {
    "hand": 1000,
    "2S": 1000,
    "runner": 2000
   },
-  "w": 1.0,
-  "note": "30회차 실패로 동결. TYPE B 변경 금지"
+  "w": {
+   "contrast": 0.65,
+   "pitcher_level": 1.0,
+   "batter_level": 2.5
+  },
+  "note": "30·38회차 두 번의 LB 실측으로 재동결. 감쇠(γ) 도입도 -4.93 이다. TYPE B 변경 금지"
  },
  "submission_candidates": [
   {
    "rank": 1,
-   "name": "cand_dcfull.zip",
-   "sha256": "4028e18cb4f20765",
-   "change": "전면 감쇠 재구성 (편차 γ=0.85 + ksh1=1600, wpost3=0.26, 대비 γ=0.85 wc=0.80, 타자 γ=0.5)",
-   "local": "2022 +3.0 / 2023 +5.1 / 2024 **+7.1**  ★3/3",
-   "conf": "중상"
+   "name": "cand_dv080.zip",
+   "sha256": "03e2274881056742",
+   "change": "편차 4축 전역 x0.80 -> w=[0.16, 0.66, 0.224, 0.36]",
+   "why": "로컬로 잡힌 유일한 미측정 블록. 대비의 LB/로컬 비율 0.81 을 적용한 지점",
+   "predicted": "+1 ~ +4 (가설), 곡선 1점 확보가 본 목적",
+   "verified": "4단계 + 행독립 0.00e+00"
   },
   {
    "rank": 2,
-   "name": "cand_dc85.zip",
-   "sha256": "5048efcb9f94096d",
-   "change": "대비·타자만 감쇠 (편차는 원본)",
-   "local": "+2.4 / +5.1 / +6.8  ★",
-   "conf": "중상 · 변경 적음"
+   "name": "cand_pw20.zip",
+   "sha256": "1ea7fc5d82933402",
+   "change": "투수 수준 가중 1.0 -> 2.0",
+   "predicted": "+0.45",
+   "verified": "기존 빌드"
   },
   {
    "rank": 3,
-   "name": "cand_dc85c.zip",
-   "sha256": "e5cf1d643a43ba3f",
-   "change": "같은 구성, wc=0.65 (보수)",
-   "local": "+3.0 / +3.8 / +5.4  ★",
-   "conf": "중상"
-  },
-  {
-   "rank": 4,
-   "name": "cand_decay.zip",
-   "sha256": "1a4ffc9a05a5c078",
-   "change": "타자 감쇠만 (대비는 하드2)",
-   "local": "+2.6 / +1.8 / +2.3  ★",
-   "conf": "중상 · 최소 변경"
-  },
-  {
-   "rank": 5,
-   "name": "cand_j2020.zip",
-   "sha256": "e7b71781407da8c7",
-   "change": "감쇠 없음, 수준 가중만",
-   "local": "+2.5 / +3.0 / +1.0  ★",
-   "conf": "안전판"
+   "name": "cand_bw21.zip",
+   "sha256": "c6cbda6f8252fcab",
+   "change": "타자 수준 가중 2.5 -> 2.10 (곡선 최적)",
+   "predicted": "+0.38",
+   "verified": "4단계 + 행독립 0.00e+00"
   }
  ],
- "research_space_status": "READY_FOR_NEXT_HYPOTHESIS",
- "updated_at": "2026-08-19T05:00:57",
+ "research_space_status": "CLOSED_EXCEPT_WEIGHT_CURVES",
+ "updated_at": "2026-08-20T07:20:00",
  "research_level": 4,
  "level_name": "ALL LEVELS SWEPT",
  "levels": {
@@ -99,5 +92,24 @@
   "final_rank": "최고점 (private 분할 없음)",
   "budget_total": 48
  },
- "strategy": "최고점 채점에서는 기대값이 아니라 **상방 꼬리**를 최적화한다. 안전한 후보는 편차가 0 이라 최고점을 못 올린다. 사전적으로 중립이고 편차가 큰 후보(모델 하이퍼파라미터·구조 변형)를 계속 쏘되, 합법성 관문 4개는 매번 통과시킨다."
+ "strategy": "38회차로 '새 축·새 표 제작'은 4연패다. 다만 최고점 채점이라 실패 비용은 0 이고 남은 예산이 약 45회이므로 상방 꼬리 전략 자체가 반증된 것은 아니다 — 반증된 것은 '로컬 3폴드 양수'라는 사전 필터다. 이제 슬롯은 **LB 가중 곡선**에 쓴다. 네 번 재서 네 번 다 로컬 최적과 LB 최적이 달랐고(대비 0.80->0.65, 타자 1.70->2.10), 편차 4축은 로컬 기여 +22.7 로 최대인데 LB 로 한 번도 재지 않았다.",
+ "dead_candidates": {
+  "note": "38회차 cand_dcfull(-4.93)로 감쇠 계열 전체 사망. 로컬 3폴드 양수였으나 전이 -0.62",
+  "files": [
+   "cand_dcfull",
+   "cand_dc85",
+   "cand_dc85c",
+   "cand_dc80a",
+   "cand_decay",
+   "cand_decay2",
+   "cand_decay3"
+  ],
+  "also_dead": [
+   "cand_jopt/jopt_h/j1520/j2020/j3020 — 자유 최적이 LB 곡선(wb 2.10)과 충돌",
+   "cand_bs/full/full2 — 볼우위 포함 (37회차 -7.07)"
+  ]
+ },
+ "open_questions": [
+  "cand_dev075(편차 4축 x0.75, sha fd77227b)와 cand_wd035 를 실제로 제출했는가? 제출했다면 그 점수가 편차 곡선의 두 번째 점이라 dv080 한 장을 아낀다"
+ ]
 }
