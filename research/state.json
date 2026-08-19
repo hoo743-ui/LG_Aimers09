@@ -76,7 +76,7 @@
   }
  ],
  "research_space_status": "CLOSED_EXCEPT_WEIGHT_CURVES",
- "updated_at": "2026-08-20T08:50:00",
+ "updated_at": "2026-08-20T09:30:00",
  "research_level": 4,
  "level_name": "ALL LEVELS SWEPT",
  "levels": {
@@ -209,42 +209,64 @@
  "method_lesson": "곡선은 다른 블록을 고정한 채 잰 값이다. 3점으로 직접 푼 곡선은 맞고, 다른 축에서 b 를 빌린 외삽은 틀린다(오차 16배). b 는 축마다 다르므로 빌리지 않는다.",
  "tomorrow_plan": {
   "date": "2026-08-21",
-  "principle": "확실히 오르는 쪽부터. 각 장이 다음 장의 기준선을 만든다",
+  "principle": "해석적 최적을 먼저 쏘고, 결과로 모형을 갱신해 재수렴한다",
   "order": [
    {
     "slot": 1,
-    "zip": "cand_wp152.zip",
-    "change": "wp 2.0 -> 1.5236 (곡선 최적)",
-    "predicted": "+0.132 -> 1075.59",
-    "conf": "높음 — 2점 해",
-    "role": "이후 네 장의 기준선"
+    "zip": "cand_opt1.zip",
+    "sha": "86fe2b9d6b7958fd",
+    "predicted": 1076.7595,
+    "role": "9차원 해석적 최적. 맞으면 프레임 확정"
    },
    {
     "slot": 2,
-    "zip": "cand_c2040.zip",
-    "change": "2S 차등 0.65 -> 0.40",
-    "predicted": "구조적 추론상 양수 유력",
-    "role": "상반 요구 가설 검정"
+    "zip": "cand_opt5.zip",
+    "sha": "b8805146ecf6f0d4",
+    "predicted": 1076.3376,
+    "role": "절반 지점. 1이 예상에 못 미치면 외삽 오차의 크기를 준다"
    },
    {
     "slot": 3,
-    "zip": "cand_c3040.zip",
-    "change": "주자 차등 0.65 -> 0.40",
-    "predicted": "위와 같음",
-    "role": "둘 중 어느 축인지 특정"
+    "zip": "재적합 최적 (1·2 결과로 빌드)",
+    "role": "두 점이 편차 축 개별 방향을 처음 탐색하므로 모형이 크게 조여진다"
    },
    {
     "slot": 4,
-    "zip": "cand_ch085.zip",
-    "change": "손 차등 0.65 -> 0.85",
-    "predicted": "1074.4 ~ 1076.5 (b 의존). 5개 시나리오 중 4개가 이득",
-    "role": "손 곡선 확정"
+    "zip": "cand_c2040.zip",
+    "role": "2S 축 단독 — 식별성을 여는 유일한 방향"
    },
    {
     "slot": 5,
-    "zip": "수확 (2~4 결과로 빌드)",
-    "role": "세 축 각자의 최적을 동시 적용"
+    "zip": "cand_c3040.zip",
+    "role": "주자 축 단독 — 2S 와 주자를 분리한다"
    }
   ]
+ },
+ "analytic_model": {
+  "script": "research/exp042_analytic.py",
+  "rms_fit": 0.3015,
+  "dof": 4,
+  "t_block": {
+   "dev4": 0.6614,
+   "hand": 0.7676,
+   "2S+runner": 0.7996,
+   "pitcher": 0.9266,
+   "batter": 1.0482
+  },
+  "max_axis_corr": 0.547,
+  "insight": "전이는 0.66~1.05 로 온건하다. 로컬 가중이 틀린 진짜 원인은 축간 상관(0.547)을 무시한 좌표별 튜닝이다",
+  "w_star": [
+   0.038324,
+   0.520078,
+   -0.000272,
+   0.029306,
+   0.765166,
+   0.706356,
+   0.962218,
+   2.221566,
+   2.221476
+  ],
+  "pred_opt": 1076.7595,
+  "pred_half": 1076.3376
  }
 }
