@@ -1,10 +1,10 @@
 {
  "champion": {
-  "artifact": "submissions/cand_dv080.zip",
-  "lb_score": 1073.8236813606,
-  "sha256": "03e2274881056742",
-  "updated_at": "2026-08-20T07:08:44",
-  "note": "bw25 + 편차 4축 x0.80. w=[0.16, 0.66, 0.224, 0.36, 0.65, 0.65, 0.65, 1.0, 2.5]"
+  "artifact": "submissions/cand_dv060.zip",
+  "lb_score": 1074.8797684337,
+  "sha256": "124d5741a493e928",
+  "updated_at": "2026-08-20T07:13:20",
+  "note": "bw25 + 편차 4축 x0.60"
  },
  "lb_anchors": {
   "C1 w=0": 1049.9225979712,
@@ -18,7 +18,8 @@
   "bw25 타자 w2.5 (Champion)": 1071.8145632143,
   "full2 볼우위": 1064.7474,
   "dcfull 감쇠표": 1066.8796553114,
-  "dv080 편차x0.80 (Champion)": 1073.8236813606
+  "dv080 편차x0.80 (Champion)": 1073.8236813606,
+  "dv060 편차x0.60 (Champion)": 1074.8797684337
  },
  "current_experiment": null,
  "current_hypothesis": "FULL",
@@ -73,7 +74,7 @@
   }
  ],
  "research_space_status": "CLOSED_EXCEPT_WEIGHT_CURVES",
- "updated_at": "2026-08-20T07:55:00",
+ "updated_at": "2026-08-20T08:10:00",
  "research_level": 4,
  "level_name": "ALL LEVELS SWEPT",
  "levels": {
@@ -122,42 +123,56 @@
     "slot": 1,
     "zip": "cand_dv080.zip",
     "result": 1073.8236813606,
-    "status": "DONE +2.01 새 Champion"
+    "status": "DONE +2.01"
    },
    {
     "slot": 2,
     "zip": "cand_dv060.zip",
-    "sha": "124d5741a493e928",
-    "change": "편차 4축 x0.60",
-    "role": "b 를 확정한다. 예상 1067.8~1075.0 으로 진단력이 크다"
+    "result": 1074.8797684337,
+    "status": "DONE +1.06 곡선 확정"
    },
    {
     "slot": 3,
-    "zip": "cand_dvopt.zip (2 결과로 빌드)",
-    "role": "편차 곡선의 해석적 최적 수확"
+    "zip": "cand_h1.zip",
+    "sha": "4e89063b3b4a58cd",
+    "predicted": 1075.88,
+    "change": "편차 m*=0.4784 + wp 2.0 + wb 2.10",
+    "role": "수확 — 세 곡선의 최적을 한 번에"
    },
    {
     "slot": 4,
-    "zip": "cand_lv2.zip",
-    "sha": "c62d2bc139b8dc25",
-    "change": "dv080 위에 wp 1.0->2.0 + wb 2.5->2.10",
-    "role": "예상 +0.83. 새 Champion 기준 단일 블록 변경"
+    "zip": "cand_ch040.zip",
+    "sha": "ce4ca6cca70ac600",
+    "role": "손 차등 축별 곡선 좌측 점"
    },
    {
     "slot": 5,
-    "zip": "결합 (3+4, 결과 보고 빌드)",
-    "role": "수확"
+    "zip": "cand_ch100.zip",
+    "sha": "b7783bd1a1ebd620",
+    "role": "손 차등 축별 곡선 우측 점"
    }
   ],
   "note": "매 결과를 받아 다음 빌드를 만든다. 실패 비용 0(최고점 채점)이므로 브래킷을 넓게 잡았다"
  },
  "dev_curve": {
-  "form": "S(m) = S0 + A(2bm - m^2)",
+  "form": "S(m) = 1072.3298 + 11.3976m - 11.9129m^2",
+  "A": 11.9129,
+  "b": 0.4784,
   "points": {
    "1.00": 1071.8145632143,
-   "0.80": 1073.8236813606
+   "0.80": 1073.8236813606,
+   "0.60": 1074.8797684337
   },
-  "constraint": "A(0.9 - b) = 5.0228",
-  "next": "m=0.60 (cand_dv060) 한 점이 b 를 유일하게 결정한다. 예상 범위 1067.80(b=.85) ~ 1075.03(b=.40)"
+  "S0_block_removed": 1072.3298,
+  "block_value_at_local_w": -0.515,
+  "block_value_at_opt": 2.726,
+  "status": "SOLVED"
+ },
+ "block_values_lb": {
+  "batter_level": 10.7,
+  "contrast3": 10.45,
+  "dev4": 2.73,
+  "pitcher_level": 1.64,
+  "note": "남은 헤드룸은 대비 3축의 축별 세분. 세 축 모두 전역 0.65 로만 쟀다"
  }
 }

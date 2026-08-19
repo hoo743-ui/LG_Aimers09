@@ -46,7 +46,7 @@ except Exception:
     pass
 
 
-def build(name, wp=None, wb=None, dev=None, diff=None, force=False):
+def build(name, wp=None, wb=None, dev=None, diff=None, abs_w=None, force=False):
     out = os.path.join(ROOT, "submissions", f"{name}.zip")
     assert force or not os.path.exists(out), f"이미 있다: {out} (--force 로 덮어쓰기)"
     src = zipfile.ZipFile(BASE_ZIP)
@@ -57,6 +57,9 @@ def build(name, wp=None, wb=None, dev=None, diff=None, force=False):
     assert pl[I_B]["cols"] == ["batter_id"], pl[I_B]["cols"]
 
     before = [s["w"] for s in pl]
+    if abs_w is not None:                     # 9가중을 직접 지정
+        assert len(abs_w) == 9, f"9개가 아니다: {len(abs_w)}"
+        pl = [dict(s, w=float(v)) for s, v in zip(pl, abs_w)]
     if wp is not None:
         pl[I_P] = dict(pl[I_P], w=float(wp))
     if wb is not None:
@@ -94,10 +97,13 @@ def main():
     ap.add_argument("--wb", type=float, default=None, help="타자 주효과 가중 (현행 2.5)")
     ap.add_argument("--dev", type=float, default=None, help="편차 4축 전역 배수")
     ap.add_argument("--diff", type=float, default=None, help="차등 3축 전역 배수")
+    ap.add_argument("--abs", type=str, default=None,
+                    help="9가중을 직접 지정 (콤마 구분). 축별 곡선 측정용")
     ap.add_argument("--force", action="store_true")
     a = ap.parse_args()
-    assert any(x is not None for x in (a.wp, a.wb, a.dev, a.diff)), "바꿀 가중을 지정하라"
-    build(a.name, a.wp, a.wb, a.dev, a.diff, a.force)
+    aw = [float(x) for x in a.abs.split(",")] if a.abs else None
+    assert any(x is not None for x in (a.wp, a.wb, a.dev, a.diff, aw)), "바꿀 가중을 지정하라"
+    build(a.name, a.wp, a.wb, a.dev, a.diff, aw, a.force)
 
 
 if __name__ == "__main__":
