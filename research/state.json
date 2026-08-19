@@ -72,7 +72,7 @@
   }
  ],
  "research_space_status": "CLOSED_EXCEPT_WEIGHT_CURVES",
- "updated_at": "2026-08-20T07:20:00",
+ "updated_at": "2026-08-20T07:45:00",
  "research_level": 4,
  "level_name": "ALL LEVELS SWEPT",
  "levels": {
@@ -111,5 +111,45 @@
  },
  "open_questions": [
   "cand_dev075(편차 4축 x0.75, sha fd77227b)와 cand_wd035 를 실제로 제출했는가? 제출했다면 그 점수가 편차 곡선의 두 번째 점이라 dv080 한 장을 아낀다"
- ]
+ ],
+ "today_plan": {
+  "date": "2026-08-20",
+  "slots": 5,
+  "design": "편차 4축 전역 배수 m 의 곡선을 m=0.60 과 1.25 로 브래킷해 3점(현행 m=1.0 포함)으로 정확히 푼다. LB 는 잡음 0 이므로 3점이면 A·b·S0 가 유일하게 결정된다.",
+  "order": [
+   {
+    "slot": 1,
+    "zip": "cand_dv060.zip",
+    "sha": "124d5741a493e928",
+    "change": "편차 4축 x0.60",
+    "role": "곡선 좌측 점"
+   },
+   {
+    "slot": 2,
+    "zip": "cand_dv125.zip",
+    "sha": "6c5f773c7f8517c0",
+    "change": "편차 4축 x1.25",
+    "role": "곡선 우측 점"
+   },
+   {
+    "slot": 3,
+    "zip": "cand_dvopt.zip (1·2 결과로 빌드)",
+    "change": "편차 4축 해석적 최적",
+    "role": "수확"
+   },
+   {
+    "slot": 4,
+    "zip": "cand_lvopt.zip",
+    "sha": "529537201adb0760",
+    "change": "wp 1.0->2.0 + wb 2.5->2.10",
+    "role": "예상 +0.83. 타자 몫(+0.377)이 곡선으로 알려져 있어 투수 b 를 역산할 수 있다"
+   },
+   {
+    "slot": 5,
+    "zip": "결합 (3+4 전부, 결과 보고 빌드)",
+    "role": "수확. 성분이 전부 측정된 뒤의 결합이라 귀속 문제 없음"
+   }
+  ],
+  "note": "매 결과를 받아 다음 빌드를 만든다. 실패 비용 0(최고점 채점)이므로 브래킷을 넓게 잡았다"
+ }
 }
