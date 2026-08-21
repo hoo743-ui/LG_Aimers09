@@ -394,6 +394,36 @@ def attach_asof_state(df, bundle):
     return df
 
 
+def attach_aux(df, bundle):
+    """보조 라벨 확률 P̂(결과|그 행) 을 피처로 붙인다 (EXP049).
+
+    학습셋에서 `asof_pitcher_n` 증분으로 복원한 투구 단위 결과
+    (`middle · reverse · ball · strike · fastball · breaking · offspeed` 와
+    그 합성 `H = middle ∨ reverse`) 를 타깃으로 학습한 모델들이다.
+
+    **규정 4 안전** — 각 보조 모델은 학습 데이터만으로 만들어졌고, 입력은 그
+    행 자신의 피처뿐이다. 다른 행을 보지 않으므로 행 하나만 있어도 같은 값이
+    나온다. 라벨 복원은 **학습 단계에서만** 일어난다.
+
+    번들에 "aux" 키가 있을 때만 동작하므로 기존 제출본은 영향받지 않는다.
+    """
+    aux = bundle.get("aux") if isinstance(bundle, dict) else None
+    if not aux:
+        return df
+    base = aux["base"]
+    missing = [c for c in base if c not in df.columns]
+    if missing:
+        raise ValueError(f"보조 모델 입력 컬럼 없음: {missing}")
+    Xb = df[base]
+    for name, models in aux["models"].items():
+        acc = None
+        for m in models:                      # 2겹의 평균 (학습 때와 동일)
+            p = m.predict_proba(Xb)[:, 1]
+            acc = p if acc is None else acc + p
+        df[f"aux_{name}"] = acc / len(models)
+    return df
+
+
 def build_features(df, bundle):
     """모델 입력 추출.
 
@@ -554,6 +584,7 @@ def main():
     if isinstance(model, dict) and any(
             c in (model.get("features") or []) for c in ASOF_COLS):
         test = attach_asof_state(test, model)
+    test = attach_aux(test, model)          # 번들에 "aux" 가 있을 때만
     X = build_features(test, model)
     print(f" features={X.shape[1]}")
 

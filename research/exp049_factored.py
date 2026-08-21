@@ -98,9 +98,9 @@ def main():
 
     AUXC = os.path.join(ROOT, "exp", "cache", "exp049_aux_{f}_{t}.npz")
 
-    def aux_col(tr, BASE, mt, mv, name, tgt, good, seed=42):
+    def aux_col(tr, BASE, mt, mv, name, tgt, good, seed=42, hp=None):
         """OOF 보조 예측. 학습 행은 2겹 OOF, 검증 행은 두 모델 평균. 폴드별 캐시."""
-        p = AUXC.format(f=fold, t=name)
+        p = AUXC.format(f=fold, t=name + ("" if hp is None else "_deep"))
         if os.path.exists(p):
             z = np.load(p)
             return z["oof"], z["val"]
@@ -111,7 +111,12 @@ def main():
         for hsel in (half, ~half):
             fitm = hsel & good
             t0 = time.time()
-            ma = ba.pipeline(BASE, seed)
+            if hp is None:
+                ma = ba.pipeline(BASE, seed)
+            else:
+                keep = ba.HP.copy(); ba.HP.clear(); ba.HP.update({**keep, **hp})
+                ma = ba.pipeline(BASE, seed)
+                ba.HP.clear(); ba.HP.update(keep)
             ma.fit(tr.loc[mt, BASE][fitm], tgt[mt][fitm].astype(int))
             oof[~hsel] = ma.predict_proba(tr.loc[mt, BASE][~hsel])[:, 1]
             parts.append(ma.predict_proba(tr.loc[mv, BASE])[:, 1])
@@ -144,13 +149,22 @@ def main():
                     # 🚩 TYPE A — 주 모델의 **타깃은 그대로** 두고 성분 확률을
                     # 피처로 넣는다. 새 라벨에서 뽑은 정보를 주입하는 것이라
                     # 원장 정의상 '새 정보축 추가'이고 전이 등급이 두 단계 낫다.
-                    tg = {"aux": {"H": H.astype(float)},
-                          "aux3": {"middle": ev["middle"], "reverse": ev["reverse"],
-                                   "ball": ev["ball"]}}[v]
+                    A3 = {"middle": ev["middle"], "reverse": ev["reverse"],
+                          "ball": ev["ball"]}
+                    A7 = {**A3, "strike": ev["strike"], "fb": ev["fb"],
+                          "br": ev["br"], "os": ev["os"]}
+                    tg = {"aux": {"H": H.astype(float)}, "aux3": A3,
+                          "aux7": A7, "aux8": {**A7, "H": H.astype(float)},
+                          "auxdeep": A3}[v]
+                    # 🚩 보조 모델만 용량을 키운다. 보조 타깃은 y 보다 신호가
+                    # 3배라 주 모델용 HP(잡음 타깃에 맞춰 규제됨)로는 덜 뽑는다.
+                    # **주 모델의 적합 절차는 불변** -> 전이 위계상 여전히 TYPE A.
+                    hpx = ({"depth": 8, "iterations": 2000, "l2_leaf_reg": 30.0}
+                           if v == "auxdeep" else None)
                     Xt2, Xv2, add = Xtr.copy(), Xva.copy(), []
                     for nm2, t2 in tg.items():
                         o2, v2 = aux_col(tr, BASE, mt, mv, nm2,
-                                         np.nan_to_num(t2), good)
+                                         np.nan_to_num(t2), good, hp=hpx)
                         Xt2[f"aux_{nm2}"] = o2
                         Xv2[f"aux_{nm2}"] = v2
                         add.append(f"aux_{nm2}")
