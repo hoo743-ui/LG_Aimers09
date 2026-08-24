@@ -29,6 +29,8 @@ import zipfile
 
 import joblib
 
+import subname
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 try:
@@ -38,6 +40,7 @@ except Exception:
 
 
 def build(base, axis, mult, name, force=False):
+    subname.check(name)
     base_zip = base if os.path.isabs(base) else os.path.join(ROOT, base)
     out = os.path.join(ROOT, "submissions", f"{name}.zip")
     assert force or not os.path.exists(out), f"이미 있다 — 덮어쓰지 않는다: {out}"

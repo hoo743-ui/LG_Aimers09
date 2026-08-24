@@ -54,6 +54,8 @@ import sys
 import zipfile
 
 import joblib
+
+import subname
 import numpy as np
 import pandas as pd
 
@@ -76,6 +78,7 @@ def load_counts():
 
 
 def build(axis, k, t, name, force=False, base=None):
+    subname.check(name)
     i, col, k0 = AXIS[axis]
     base_zip = os.path.join(ROOT, base) if base else BASE_ZIP
     out = os.path.join(ROOT, "submissions", f"{name}.zip")
