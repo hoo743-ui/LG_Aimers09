@@ -6,6 +6,8 @@ r"""타자 수준축의 **{1/(n+k)} family 밖** 방향을 탐침하는 후보�
 투수 모양 정점 +0.002, 카운트 축 -6.39 -> 남은 이득은 그 평면 **밖**에 있다.
 2차식 기하로 잰 타자 크기 축 잔여는 +0.04 (c* 방향 기울기 P-Q≈-1.0, Q≈26.5).
 
+## 8/25 실측: hi s=0.4 −1.49 · **n s=0.4 +8.35 (60회차, 새 Champion 1098.3639)**
+
 ## 방향 (원장 2026-08-24 "타자축에 남은 좌표")
 
     hi   r̄_e·1[n_e > N]      고-n 만 남기고 저-n 은 0      (평면 밖 44.8%)
@@ -30,7 +32,7 @@ import subname
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE = os.path.join(ROOT, "submissions", "cand_kb45.zip")     # v* (t=-4.5)
 ORIG = os.path.join(ROOT, "submissions", "cand_mir.zip")      # v0 (k=20000)
-I, COL, K0 = 8, "batter_id", 20000
+AXES = {"batter": (8, "batter_id", 20000, 1950), "pitcher": (7, "pitcher_id", 50000, 1950)}
 WIN, REF, NTH = [2023, 2024], 2024, 1950
 
 try: sys.stdout.reconfigure(encoding="utf-8")
@@ -41,12 +43,13 @@ def load(z):
     return joblib.load(io.BytesIO(zipfile.ZipFile(z).read("model/rf.pkl")))
 
 
-def build(d, s, name, force=False):
+def build(d, s, name, force=False, axis="batter"):
+    I, COL, K0, NTH = AXES[axis]
     subname.check(name)
     out = os.path.join(ROOT, "submissions", f"{name}.zip")
     assert force or not os.path.exists(out), out
     b = load(BASE); pl = b["platoon"]; assert pl[I]["cols"] == [COL]
-    o = load(ORIG)["platoon"][I]; assert o["cols"] == [COL] and "k=20000" in o["note"]
+    o = load(ORIG)["platoon"][I]; assert o["cols"] == [COL] and f"k={K0}" in o["note"]
     tab_s = {k[0]: v for k, v in pl[I]["table"].items()}
     tab_0 = {k[0]: v for k, v in o["table"].items()}
     ids = np.array(sorted(tab_s)); assert set(ids) == set(tab_0)
@@ -73,14 +76,14 @@ def build(d, s, name, force=False):
     alpha = cs.std() / cd.std()
     vt = vs + s * alpha * vd
     ct = rv(vt)
-    print(f"{name}  dir={d}  s={s:g}  기반 cand_kb45 (v*), 원 표 cand_mir (S_e 역산)")
+    print(f"{name}  axis={axis}  dir={d}  s={s:g}  기반 cand_kb45 (v*), 원 표 cand_mir (S_e 역산)")
     print(f"  corr(c_dir, c*) {np.corrcoef(cd, cs)[0,1]:+.4f}   평면밖 {np.sqrt(1-np.corrcoef(cd,cs)[0,1]**2)*100:.1f}%")
     print(f"  corr(c_s, c*)   {np.corrcoef(ct, cs)[0,1]:+.4f}   행 sd 비 {ct.std()/cs.std():.6f}   alpha {alpha:.6g}")
     print(f"  n>{NTH}: {(n>NTH).sum()}/{len(n)} 명,  2024 행 커버 {hit.mean()*100:.1f}%")
     pl[I] = dict(pl[I], table={(e,): float(x) for e, x in zip(ids, vt)},
-                 note=pl[I]["note"] + f" | BDIR {d} s={s:g} (행 sd 고정 alpha={alpha:.6g}), 가중 불변")
+                 note=pl[I]["note"] + f" | BDIR {axis} {d} s={s:g} (행 sd 고정 alpha={alpha:.6g}), 가중 불변")
     b["platoon"] = pl
-    b["note"] = b["note"].split("|")[0] + f"| BDIR batter {d} s={s:g}, 9가중 불변"
+    b["note"] = b["note"].split("|")[0] + f"| BDIR {axis} {d} s={s:g}, 9가중 불변"
     buf = io.BytesIO(); joblib.dump(b, buf, compress=3)
     src = zipfile.ZipFile(BASE)
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
@@ -98,5 +101,6 @@ if __name__ == "__main__":
     ap.add_argument("--s", type=float, required=True)
     ap.add_argument("--name", required=True)
     ap.add_argument("--force", action="store_true")
+    ap.add_argument("--axis", default="batter", choices=list(AXES))
     a = ap.parse_args()
-    build(a.dir, a.s, a.name, a.force)
+    build(a.dir, a.s, a.name, a.force, a.axis)
