@@ -44,11 +44,12 @@ def load(z):
     return joblib.load(io.BytesIO(zipfile.ZipFile(z).read("model/rf.pkl")))
 
 
-def build(terms, name, force=False, axis="batter"):
+def build(terms, name, force=False, axis="batter", base=None):
     """terms = [(dir, s), ...]  v = v* + Σ s·alpha_dir·v_dir.  방향 정의는 고정(정준):
        hi, n 은 c* 에 직교, logn 은 {c*, n⊥} 에 직교 (비중심 내적)."""
     I, COL, K0, NTH = AXES[axis]
     subname.check(name)
+    BASE = base or globals()["BASE"]           # --base 로 연쇄 빌드 (타자 축 위에 투수 축)
     out = os.path.join(ROOT, "submissions", f"{name}.zip")
     assert force or not os.path.exists(out), out
     b = load(BASE); pl = b["platoon"]; assert pl[I]["cols"] == [COL]
@@ -78,7 +79,7 @@ def build(terms, name, force=False, axis="batter"):
     D = {}
     D["hi"] = orth(raw["hi"], [vs]); D["n"] = orth(raw["n"], [vs]); D["logn"] = orth(raw["logn"], [vs, D["n"]], centered=True)   # hi/n 은 60회차 직선 보존을 위해 비중심 유지
     vt = vs.copy(); tag = []
-    print(f"{name}  axis={axis}  terms={terms}  기반 cand_kb45 (v*), 원 표 cand_mir (S_e 역산)")
+    print(f"{name}  axis={axis}  terms={terms}  기반 {os.path.basename(BASE)} (v*), 원 표 cand_mir (S_e 역산)")
     for d, s in terms:
         vd = D[d]; cd = rv(vd); alpha = cs.std() / cd.std()
         print(f"  [{d}] corr(c_dir, c*) {np.corrcoef(cd, cs)[0,1]:+.4f}   corr(c_dir, c_n) {np.corrcoef(cd, rv(D['n']))[0,1]:+.4f}   alpha {alpha:.6g}")
@@ -109,6 +110,7 @@ if __name__ == "__main__":
     ap.add_argument("--name", required=True)
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--axis", default="batter", choices=list(AXES))
+    ap.add_argument("--base", help="시작 zip (기본 cand_kb45). 다른 축 위에 얹을 때")
     a = ap.parse_args()
     terms = [(t.split(':')[0], float(t.split(':')[1])) for t in a.terms.split(',')] if a.terms else [(a.dir, a.s)]
-    build(terms, a.name, a.force, a.axis)
+    build(terms, a.name, a.force, a.axis, a.base)
