@@ -105,9 +105,9 @@ strikes_before · num_runners_on · batter_id`)뿐이고, 표는 학습 데이�
 | 61 | 260826_1_kbn08 | 15a39d9e883cc32f | submissions/ | 청정 | **0.000e+00** | **재검사 8/26** |
 | 62 | 260826_2_kpn | befe6f125b39fd7f | submissions/ | 청정 | **0.000e+00** | **재검사 8/26** |
 | 63 | 260826_3_kpn08 | 490b616104147264 | submissions/ | 청정 | **0.000e+00** | 빌드 직후 8/26 00:50, verify 1~4 |
-| (예정) | 260826_4_kbln | 859c06f66bc380bd | submissions/ | 청정 | **0.000e+00** | **재검사 8/26** |
+| 64 | 260826_4_kbln | 859c06f66bc380bd | submissions/ | 청정 | **0.000e+00** | **재검사 8/26** |
 | 예비(5번 후보) | cand_kbln08 (log n s=0.8) | 7e40b5236ebac5d3 | submissions/ | 청정 | **0.000e+00** | 빌드 직후 8/26 01:35, verify 1~4 |
-| 예비(5번 후보) | cand_kblnm (log n s=−0.4 미러) | 3ae7bc61d6ed6744 | submissions/ | 청정 | **0.000e+00** | 빌드 직후 8/26 01:35, verify 1~4 |
+| (예정 5) | 260826_5_kblnm (구 cand_kblnm, log n s=−0.4 미러) | 3ae7bc61d6ed6744 | submissions/ | 청정 | **0.000e+00** | 빌드 직후 8/26 01:35, verify 1~4 |
 | 예비 | cand_cntm / kbw06 / kbw14 / kp1 | b9ef1bbc… / 3194bb71… / 00dd27d2… / 25beb534… | submissions/ | 청정 | **0.000e+00** | **재검사 8/26** (미제출) |
 
 ```
