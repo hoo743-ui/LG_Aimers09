@@ -33,6 +33,7 @@ import subname
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE = os.path.join(ROOT, "submissions", "cand_kb45.zip")     # v* (t=-4.5)
 ORIG = os.path.join(ROOT, "submissions", "cand_mir.zip")      # v0 (k=20000)
+REFZ = os.path.join(ROOT, "submissions", "cand_kb45.zip")     # 방향 직교화 기준 (항상 고정)
 AXES = {"batter": (8, "batter_id", 20000, 1950), "pitcher": (7, "pitcher_id", 50000, 1950)}
 WIN, REF, NTH = [2023, 2024], 2024, 1950
 
@@ -54,13 +55,16 @@ def build(terms, name, force=False, axis="batter", base=None):
     assert force or not os.path.exists(out), out
     b = load(BASE); pl = b["platoon"]; assert pl[I]["cols"] == [COL]
     o = load(ORIG)["platoon"][I]; assert o["cols"] == [COL] and f"k={K0}" in o["note"]
-    tab_s = {k[0]: v for k, v in pl[I]["table"].items()}
+    ref = load(REFZ)["platoon"][I]; assert ref["cols"] == [COL]          # 직교화·alpha 기준 = kb45 (좌표계 고정)
+    tab_s = {k[0]: v for k, v in ref["table"].items()}
+    tab_b = {k[0]: v for k, v in pl[I]["table"].items()}; assert set(tab_b) == set(tab_s)
     tab_0 = {k[0]: v for k, v in o["table"].items()}
     ids = np.array(sorted(tab_s)); assert set(ids) == set(tab_0)
     df = pd.read_csv(os.path.join(ROOT, "data", "train.csv"), usecols=["season", COL])
     n = df[df.season.isin(WIN)].groupby(COL).size().reindex(ids).to_numpy(float)
+    n24 = df[df.season == REF].groupby(COL).size().reindex(ids).fillna(0).to_numpy(float)
     assert np.isfinite(n).all()
-    vs = np.array([tab_s[e] for e in ids]); v0 = np.array([tab_0[e] for e in ids])
+    vs = np.array([tab_s[e] for e in ids]); v0 = np.array([tab_0[e] for e in ids]); vb = np.array([tab_b[e] for e in ids])
     S = v0 * (n + K0); rbar = S / n
     rid = df[df.season == REF][COL].to_numpy()
     pos = {e: j for j, e in enumerate(ids)}
@@ -68,17 +72,26 @@ def build(terms, name, force=False, axis="batter", base=None):
     def rv(v):
         x = np.zeros(len(rid)); x[hit] = v[j[hit]]; return x
     cs = rv(vs)
-    def orth(v, basis, centered=False):
+    def orth(v, basis, centered=False, joint=False):
+        if joint:                             # 결합 최소제곱: 기저가 서로 비직교여도 전부에 직교 (8/26 plogn 에서 순차가 c* 를 되살림)
+            A = np.stack([rv(bv) for bv in basis], 1); a = rv(v)
+            if centered: A, a = A - A.mean(0), a - a.mean()
+            beta = np.linalg.lstsq(A, a, rcond=None)[0]
+            return v - sum(float(bt) * bv for bt, bv in zip(beta, basis))
         for bv in basis:
             a, c = rv(v), rv(bv)
             if centered:                      # rho 는 상수에 불변 -> 공분산 내적이 맞다
                 a, c = a - a.mean(), c - c.mean()
             v = v - float(np.dot(a, c) / np.dot(c, c)) * bv
         return v
-    raw = {"hi": np.where(n > NTH, rbar, 0.0), "n": n - n.mean(), "logn": np.log1p(n) - np.log1p(n).mean()}
+    raw = {"hi": np.where(n > NTH, rbar, 0.0), "n": n - n.mean(), "logn": np.log1p(n) - np.log1p(n).mean(),
+           "n24": n24 - n24.mean()}                       # 최신성: 직전 1시즌 노출
     D = {}
-    D["hi"] = orth(raw["hi"], [vs]); D["n"] = orth(raw["n"], [vs]); D["logn"] = orth(raw["logn"], [vs, D["n"]], centered=True)   # hi/n 은 60회차 직선 보존을 위해 비중심 유지
-    vt = vs.copy(); tag = []
+    D["hi"] = orth(raw["hi"], [vs]); D["n"] = orth(raw["n"], [vs])                       # hi/n 은 60회차 직선 보존을 위해 비중심 유지
+    # 타자 logn 은 64·65회차 직선 보존을 위해 순차 유지 (corr(D[n], c*)=0.01 이라 차이 미미). 투수는 0.28 이라 결합 직교화
+    D["logn"] = orth(raw["logn"], [vs, D["n"]], centered=True, joint=(axis != "batter"))
+    D["n24"] = orth(raw["n24"], [vs, D["n"], D["logn"]], centered=True, joint=True)
+    vt = vb.copy(); tag = []
     print(f"{name}  axis={axis}  terms={terms}  기반 {os.path.basename(BASE)} (v*), 원 표 cand_mir (S_e 역산)")
     for d, s in terms:
         vd = D[d]; cd = rv(vd); alpha = cs.std() / cd.std()
@@ -104,7 +117,7 @@ def build(terms, name, force=False, axis="batter", base=None):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--dir", choices=["hi", "n", "logn"])
+    ap.add_argument("--dir", choices=["hi", "n", "logn", "n24"])
     ap.add_argument("--s", type=float)
     ap.add_argument("--terms", help="예) n:0.8,logn:0.4  (--dir/--s 대신)")
     ap.add_argument("--name", required=True)

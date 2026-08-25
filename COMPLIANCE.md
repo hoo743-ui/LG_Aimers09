@@ -109,6 +109,10 @@ strikes_before · num_runners_on · batter_id`)뿐이고, 표는 학습 데이�
 | 예비(5번 후보) | cand_kbln08 (log n s=0.8) | 7e40b5236ebac5d3 | submissions/ | 청정 | **0.000e+00** | 빌드 직후 8/26 01:35, verify 1~4 |
 | 65 | 260826_5_kblnm (구 cand_kblnm, log n s=−0.4 미러) | 3ae7bc61d6ed6744 | submissions/ | 청정 | **0.000e+00** | 빌드 직후 8/26 01:35, verify 1~4 |
 | **(예정 8/27-1)** | **260827_1_nfin** (kb45 + 타자 n 0.4203 + log n 0.1637 + 투수 n 0.5095) | **9fadd07bffc18398** | submissions/ | 청정 | **0.000e+00** | 빌드 직후 8/26 01:50, verify 1~4. 표 검증: 타자표=단독빌드, 투수차분=kpn x1.27375, 7표 불변 |
+| (예정 8/27-2) | 260827_2_bhim | e535532f5cba747b | submissions/ | 청정 | **0.000e+00** | 8/26 02:15, verify 1~4 |
+| (예정 8/27-3) | 260827_3_bn24 | ecfaf2325bd35868 | submissions/ | 청정 | **0.000e+00** | 8/26 02:15, verify 1~4 |
+| (예정 8/27-4 후보) | cand_bn24_08 / cand_bn24m | b0acbea6f3c4da5a / c7e49f23b052e309 | submissions/ | 청정 | **0.000e+00** | 8/26 02:15, verify 1~4 |
+| (예정 8/27-5) | 260827_5_plogn | 8a0758a1fffc1afc | submissions/ | 청정 | **0.000e+00** | 8/26 02:15, verify 1~4 |
 | 예비 | cand_nfin_b (합성 중간, 타자만) | 555806bdaabc7c5b | submissions/ | 청정 | **0.000e+00** | 8/26 01:50 |
 | 예비 | cand_cntm / kbw06 / kbw14 / kp1 | b9ef1bbc… / 3194bb71… / 00dd27d2… / 25beb534… | submissions/ | 청정 | **0.000e+00** | **재검사 8/26** (미제출) |
 
