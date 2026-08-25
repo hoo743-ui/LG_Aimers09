@@ -12,7 +12,8 @@ r"""타자 수준축의 **{1/(n+k)} family 밖** 방향을 탐침하는 후보�
 
     hi   r̄_e·1[n_e > N]      고-n 만 남기고 저-n 은 0      (평면 밖 44.8%)
                             "저-n 의 음수 가중이 정답인가 0 이 정답인가"
-    n    (n_e − n̄)          잔차 없이 출장수만            (평면 밖 92.7%)
+    n    (n_e − n̄)          잔차 없이 출장수만            (평면 밖 92.7%)   60회차 +8.35
+    logn (log n_e − 평균) ⊥ {c*, n}   n 효과의 오목 성분.  OOF 잔차상관이 2022·2024 모두 선형 n 보다 큼 (|c| 1.5~1.9배)
                             +24.5 가 타자 수준인가 '주전 편향'인가
 
 **가산** 직선이고 방향은 c* 에 **직교화**한다(크기 성분은 이미 측정됨) (t-선처럼 치환하면 corr 0.77/-0.14 라 +24.5 를 버린다).
@@ -43,7 +44,9 @@ def load(z):
     return joblib.load(io.BytesIO(zipfile.ZipFile(z).read("model/rf.pkl")))
 
 
-def build(d, s, name, force=False, axis="batter"):
+def build(terms, name, force=False, axis="batter"):
+    """terms = [(dir, s), ...]  v = v* + Σ s·alpha_dir·v_dir.  방향 정의는 고정(정준):
+       hi, n 은 c* 에 직교, logn 은 {c*, n⊥} 에 직교 (비중심 내적)."""
     I, COL, K0, NTH = AXES[axis]
     subname.check(name)
     out = os.path.join(ROOT, "submissions", f"{name}.zip")
@@ -58,32 +61,34 @@ def build(d, s, name, force=False, axis="batter"):
     assert np.isfinite(n).all()
     vs = np.array([tab_s[e] for e in ids]); v0 = np.array([tab_0[e] for e in ids])
     S = v0 * (n + K0); rbar = S / n
-    if d == "hi":
-        vd = np.where(n > NTH, rbar, 0.0)
-    elif d == "n":
-        vd = n - n.mean()
-    else:
-        raise ValueError(d)
     rid = df[df.season == REF][COL].to_numpy()
     pos = {e: j for j, e in enumerate(ids)}
     j = np.array([pos.get(e, -1) for e in rid]); hit = j >= 0
     def rv(v):
         x = np.zeros(len(rid)); x[hit] = v[j[hit]]; return x
     cs = rv(vs)
-    beta = float(np.dot(rv(vd), cs) / np.dot(cs, cs))     # c* 성분 제거 (크기 축은 잔여 +0.04, 이미 잰 것)
-    vd = vd - beta * vs
-    cd = rv(vd)
-    alpha = cs.std() / cd.std()
-    vt = vs + s * alpha * vd
+    def orth(v, basis, centered=False):
+        for bv in basis:
+            a, c = rv(v), rv(bv)
+            if centered:                      # rho 는 상수에 불변 -> 공분산 내적이 맞다
+                a, c = a - a.mean(), c - c.mean()
+            v = v - float(np.dot(a, c) / np.dot(c, c)) * bv
+        return v
+    raw = {"hi": np.where(n > NTH, rbar, 0.0), "n": n - n.mean(), "logn": np.log1p(n) - np.log1p(n).mean()}
+    D = {}
+    D["hi"] = orth(raw["hi"], [vs]); D["n"] = orth(raw["n"], [vs]); D["logn"] = orth(raw["logn"], [vs, D["n"]], centered=True)   # hi/n 은 60회차 직선 보존을 위해 비중심 유지
+    vt = vs.copy(); tag = []
+    print(f"{name}  axis={axis}  terms={terms}  기반 cand_kb45 (v*), 원 표 cand_mir (S_e 역산)")
+    for d, s in terms:
+        vd = D[d]; cd = rv(vd); alpha = cs.std() / cd.std()
+        print(f"  [{d}] corr(c_dir, c*) {np.corrcoef(cd, cs)[0,1]:+.4f}   corr(c_dir, c_n) {np.corrcoef(cd, rv(D['n']))[0,1]:+.4f}   alpha {alpha:.6g}")
+        vt = vt + s * alpha * vd; tag.append(f"{d} s={s:g}")
     ct = rv(vt)
-    print(f"{name}  axis={axis}  dir={d}  s={s:g}  기반 cand_kb45 (v*), 원 표 cand_mir (S_e 역산)")
-    print(f"  corr(c_dir, c*) {np.corrcoef(cd, cs)[0,1]:+.4f}   평면밖 {np.sqrt(1-np.corrcoef(cd,cs)[0,1]**2)*100:.1f}%")
-    print(f"  corr(c_s, c*)   {np.corrcoef(ct, cs)[0,1]:+.4f}   행 sd 비 {ct.std()/cs.std():.6f}   alpha {alpha:.6g}")
-    print(f"  n>{NTH}: {(n>NTH).sum()}/{len(n)} 명,  2024 행 커버 {hit.mean()*100:.1f}%")
+    print(f"  corr(c_final, c*) {np.corrcoef(ct, cs)[0,1]:+.4f}   행 sd 비 {ct.std()/cs.std():.6f}   n>{NTH}: {(n>NTH).sum()}/{len(n)}")
     pl[I] = dict(pl[I], table={(e,): float(x) for e, x in zip(ids, vt)},
-                 note=pl[I]["note"] + f" | BDIR {axis} {d} s={s:g} (행 sd 고정 alpha={alpha:.6g}), 가중 불변")
+                 note=pl[I]["note"] + f" | BDIR {axis} {' + '.join(tag)} (행 sd 정규화 가산), 가중 불변")
     b["platoon"] = pl
-    b["note"] = b["note"].split("|")[0] + f"| BDIR {axis} {d} s={s:g}, 9가중 불변"
+    b["note"] = b["note"].split("|")[0] + f"| BDIR {axis} {' + '.join(tag)}, 9가중 불변"
     buf = io.BytesIO(); joblib.dump(b, buf, compress=3)
     src = zipfile.ZipFile(BASE)
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
@@ -93,14 +98,17 @@ def build(d, s, name, force=False, axis="batter"):
     h = hashlib.sha256(open(out, "rb").read()).hexdigest()
     print(f"  9가중 {[round(x['w'],4) for x in pl]}")
     print(f"  sha256 {h[:16]}   {os.path.getsize(out):,} bytes")
+    return h
 
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--dir", required=True, choices=["hi", "n"])
-    ap.add_argument("--s", type=float, required=True)
+    ap.add_argument("--dir", choices=["hi", "n", "logn"])
+    ap.add_argument("--s", type=float)
+    ap.add_argument("--terms", help="예) n:0.8,logn:0.4  (--dir/--s 대신)")
     ap.add_argument("--name", required=True)
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--axis", default="batter", choices=list(AXES))
     a = ap.parse_args()
-    build(a.dir, a.s, a.name, a.force, a.axis)
+    terms = [(t.split(':')[0], float(t.split(':')[1])) for t in a.terms.split(',')] if a.terms else [(a.dir, a.s)]
+    build(terms, a.name, a.force, a.axis)
