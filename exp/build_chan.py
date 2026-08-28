@@ -62,8 +62,11 @@ def build(w, name, force=False, base=None):
     b = joblib.load(io.BytesIO(src.read("model/rf.pkl")))
     FEAT = list(b["features"])
     script = src.read("script.py").decode("utf-8")
-    assert PATCH_OLD in script, "script.py 패치 지점을 못 찾았다"
-    script = script.replace(PATCH_OLD, PATCH_NEW)
+    po, pn = PATCH_OLD, PATCH_NEW
+    if po not in script:                       # zip 의 script.py 는 CRLF
+        po, pn = po.replace("\n", "\r\n"), pn.replace("\n", "\r\n")
+    assert po in script, "script.py 패치 지점을 못 찾았다"
+    script = script.replace(po, pn)
 
     tr = build_df()
     season = tr["season"].to_numpy()

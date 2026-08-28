@@ -1,6 +1,0 @@
-Traceback (most recent call last):
-  File "C:\Users\USER\OneDrive\바탕 화면\대학\개인공부\LG_Aimers_2\LG_Aimers09\exp\build_chan.py", line 115, in <module>
-    build(a.w, a.name, a.force, a.base)
-  File "C:\Users\USER\OneDrive\바탕 화면\대학\개인공부\LG_Aimers_2\LG_Aimers09\exp\build_chan.py", line 65, in build
-    assert PATCH_OLD in script, "script.py 패치 지점을 못 찾았다"
-AssertionError: script.py 패치 지점을 못 찾았다
