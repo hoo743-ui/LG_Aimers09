@@ -32,6 +32,13 @@ t=0 이 현행 Champion. 9가중 불변. TYPE B 지만 로컬로 아무것도 �
 LB 3점 해법으로 잰다 (그 규율은 55·61·63·71·73·75회차에서 전부 맞았다).
 
     .\venv_submit\Scripts\python.exe -u exp\build_cshape.py --axis hand --k 100 --t 3 --name cand_c4p3
+
+## 평면 밖 방향 (8/30) — 타자 순수 n(+8.35, 60회차)과 같은 좌표를 대비 셀에
+
+    --dir n|logn --s 0.4     v_t = v0 + s·alpha·d⊥,   d = (n_e 중심화) 를 c* 에 결합 직교화,
+                             alpha = sd(c*)/sd(c_d)   (2024 조회 분포)
+
+    .\venv_submit\Scripts\python.exe -u exp\build_cshape.py --axis hand --dir n --s 0.4 --name cand_c4n
 """
 import argparse, hashlib, io, os, sys, zipfile
 
@@ -56,19 +63,21 @@ except Exception:
     pass
 
 
-def build(axis, k, t, name, force=False, base=None):
+def build(axis, k, t, name, force=False, base=None, dirn=None, s=None):
     subname.check(name)
     i, cols, k0 = AXIS[axis]
     base_zip = os.path.join(ROOT, base) if base else BASE_ZIP
     out = os.path.join(ROOT, "submissions", f"{name}.zip")
     assert force or not os.path.exists(out), f"이미 있다: {out}"
+    mode = "dir" if dirn else "t"
 
     src = zipfile.ZipFile(base_zip)
     b = joblib.load(io.BytesIO(src.read("model/rf.pkl")))
     pl = b["platoon"]
     assert len(pl) == 9 and pl[i]["cols"] == cols, (len(pl), pl[i]["cols"])
     assert f"k={k0}" in pl[i]["note"], f"k0 역산 무효: {pl[i]['note'][:120]}"
-    assert "CSHAPE" not in pl[i]["note"], f"이미 이동한 표: {pl[i]['note'][:120]}"
+    if mode == "t":
+        assert "CSHAPE" not in pl[i]["note"], f"이미 이동한 표: {pl[i]['note'][:120]}"
     tab = dict(pl[i]["table"])
 
     use = ["season"] + [c for c in ("pitcher_id", "pitcher_hand", "batter_hand",
@@ -125,20 +134,34 @@ def build(axis, k, t, name, force=False, base=None):
         return m.fillna(0.0).to_numpy(float)
 
     c0 = rowvec(expand(v0))
-    ck = rowvec(expand(vk))
-    alpha = c0.std() / ck.std()
-    vt = v0 + t * (alpha * vk - v0)
+    if mode == "t":
+        ck = rowvec(expand(vk))
+        alpha = c0.std() / ck.std()
+        vt = v0 + t * (alpha * vk - v0)
+        corr = float(np.corrcoef(c0, ck)[0, 1])
+        tagn, tagf = f"모양 k {k0}->{k:g} t={t:g}", f"모양 k={k0}->{k:g} t={t:g}"
+    else:
+        # 평면 밖 방향: 순수 n / log n, c* 에 직교화 (2024 조회 내적, 중심화)
+        d = ne - ne.mean() if dirn == "n" else np.log1p(ne) - np.log1p(ne).mean()
+        cd_r, c0_r = rowvec(expand(d)), c0
+        a1, b1 = cd_r - cd_r.mean(), c0_r - c0_r.mean()
+        beta = float(np.dot(a1, b1) / np.dot(b1, b1))
+        d = d - beta * v0
+        cd = rowvec(expand(d))
+        alpha = c0.std() / cd.std()
+        vt = v0 + s * alpha * d
+        corr = float(np.corrcoef(cd, c0)[0, 1])
+        tagn, tagf = f"BDIR {dirn} s={s:g}", f"BDIR {dirn} s={s:g}"
     tab_t = expand(vt)
     ct = rowvec(tab_t)
-    corr = float(np.corrcoef(c0, ck)[0, 1])
     corrt = float(np.corrcoef(c0, ct)[0, 1])
 
     pl[i] = dict(pl[i], table=tab_t,
-                 note=pl[i]["note"] + f" | CSHAPE 모양 k {k0}->{k:g} t={t:g} "
-                      f"(행 sd 고정 alpha={alpha:.6f}), 가중 불변")
+                 note=pl[i]["note"] + f" | CSHAPE {tagn} "
+                      f"(행 sd 정규화 alpha={alpha:.6f}), 가중 불변")
     b["platoon"] = pl
     b["note"] = (b["note"].split("|")[0]
-                 + f"| CSHAPE {axis} 대비축 모양 k={k0}->{k:g} t={t:g}, 9가중 불변")
+                 + f"| CSHAPE {axis} 대비축 {tagf}, 9가중 불변")
 
     buf = io.BytesIO()
     joblib.dump(b, buf, compress=3)
@@ -147,8 +170,8 @@ def build(axis, k, t, name, force=False, base=None):
         for nm in ("script.py", "requirements.txt"):
             z.writestr(nm, src.read(nm))
     h = hashlib.sha256(open(out, "rb").read()).hexdigest()
-    print(f"{name}.zip   축={axis}(#{i})  k {k0} -> {k:g}   t={t:g}   기반 {os.path.basename(base_zip)}")
-    print(f"  alpha {alpha:.6f}   corr(c_k, c_0) {corr:.5f}  직교성분 {np.sqrt(max(0,1-corr**2))*100:.1f}%")
+    print(f"{name}.zip   축={axis}(#{i})  {tagn}   기반 {os.path.basename(base_zip)}")
+    print(f"  alpha {alpha:.6f}   corr(기저, c_0) {corr:.5f}  직교성분 {np.sqrt(max(0,1-corr**2))*100:.1f}%")
     print(f"  corr(c_t, c_0) {corrt:.5f}   행 sd 비 {ct.std()/c0.std():.6f}   살아있는 셀 {int(live.sum())}/{len(tab)}")
     print(f"  9가중 {[round(s['w'],4) for s in pl]}")
     print(f"  sha256 {h[:16]}   {os.path.getsize(out):,} bytes")
@@ -158,10 +181,17 @@ def build(axis, k, t, name, force=False, base=None):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--axis", required=True, choices=list(AXIS))
-    ap.add_argument("--k", type=float, required=True)
-    ap.add_argument("--t", type=float, required=True)
+    ap.add_argument("--k", type=float)
+    ap.add_argument("--t", type=float)
+    ap.add_argument("--dir", dest="dirn", choices=["n", "logn"])
+    ap.add_argument("--s", type=float)
     ap.add_argument("--name", required=True)
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--base", default=None)
     a = ap.parse_args()
-    build(a.axis, a.k, a.t, a.name, a.force, a.base)
+    if a.dirn:
+        assert a.s is not None, "--dir 에는 --s 가 필요하다"
+        build(a.axis, AXIS[a.axis][2], 0.0, a.name, a.force, a.base, a.dirn, a.s)
+    else:
+        assert a.k is not None and a.t is not None, "--k --t 또는 --dir --s"
+        build(a.axis, a.k, a.t, a.name, a.force, a.base)
