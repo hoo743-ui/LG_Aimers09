@@ -168,8 +168,8 @@ py -3.13 -m venv .venv
 ```
 1  260830_1_c6p3    주자 대비 모양 t=+3        sha de64f61cf1e0a61c   **제출 완료 1104.3283 (−1.61)** -> 음수, 2번 = c6m3b
 2  260830_2_c6m3b   주자 대비 모양 t=−3 (미러)  sha 491e627183f7d875   **제출 완료 1104.0405 (−1.90)** -> t*=0.123, 정점 +0.003. **주자 모양 종료** (대비 3축 모양 완결)
-3  260830_3_c4n04b  손 대비 순수 n s=+0.4      sha ca9a9f7e426f6edd   (cand_c4n04b 에서 git mv)
-4  분기             양수 크면 s=+0.8 / 음수 -> cand_c4nm04b (s=−0.4, sha a0a8d4a5d29a1edc)
+3  260830_3_c4n04b  손 대비 순수 n s=+0.4      sha ca9a9f7e426f6edd   **제출 완료 1098.5875 (−7.36)** -> 음수, 4번 = c4nm04b 미러
+4  260830_4_c4nm04b 손 대비 순수 n s=−0.4 (미러) sha a0a8d4a5d29a1edc   (cand_c4nm04b 에서 git mv)
 5  잔여 정점 회수 or cand_chan25 (채널 혼합 도박, sha d6d5e1318a5cbe80)
 ```
 도박 대기열: cand_chan25 (로컬 +7.67) > cand_hd1 (전이 3/3, sha 3b53661491dcc00e) > HP 로터리 (rsm80 > l2_30 > iter3k > d7 > bord128 > bord254)
