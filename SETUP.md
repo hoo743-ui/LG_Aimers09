@@ -166,8 +166,8 @@ py -3.13 -m venv .venv
 
 **8/30 계획 — 5슬롯 (기준선 = c4p3 1105.9428, 전부 c4p3 위·관문 3종 통과)**
 ```
-1  260830_1_c6p3    주자 대비 모양 t=+3        sha de64f61cf1e0a61c
-2  분기             양수 크면 t=+6 도박 / 음수 -> cand_c6m3b (t=−3, sha 491e627183f7d875)
+1  260830_1_c6p3    주자 대비 모양 t=+3        sha de64f61cf1e0a61c   **제출 완료 1104.3283 (−1.61)** -> 음수, 2번 = c6m3b
+2  260830_2_c6m3b   주자 대비 모양 t=−3 (미러)  sha 491e627183f7d875   (cand_c6m3b 에서 git mv)
 3  cand_c4n04b     손 대비 순수 n s=+0.4      sha ca9a9f7e426f6edd
 4  분기             양수 크면 s=+0.8 / 음수 -> cand_c4nm04b (s=−0.4, sha a0a8d4a5d29a1edc)
 5  잔여 정점 회수 or cand_chan25 (채널 혼합 도박, sha d6d5e1318a5cbe80)
